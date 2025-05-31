@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatAddress, getChainName } from '@/lib/wagmi-config'
 import { publicKeyService } from '@/lib/public-key-service'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import type { Connector } from 'wagmi'
 
 interface WalletConnectionProps {
   onWalletConnected?: (address: string, publicKey: string) => void
@@ -22,16 +23,9 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
   const [publicKey, setPublicKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Check for cached public key when wallet connects
-  useEffect(() => {
-    if (isConnected && address && !publicKey) {
-      checkCachedKey()
-    }
-  }, [isConnected, address])
-
-  const checkCachedKey = async () => {
+  const checkCachedKey = useCallback(async () => {
     if (!address) return
-    
+
     try {
       const cachedKey = await publicKeyService.getPublicKey(address)
       if (cachedKey) {
@@ -44,7 +38,14 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
     } catch (error) {
       console.error('Failed to check cached key:', error)
     }
-  }
+  }, [address, onWalletConnected])
+
+  // Check for cached public key when wallet connects
+  useEffect(() => {
+    if (isConnected && address && !publicKey) {
+      checkCachedKey()
+    }
+  }, [isConnected, address, publicKey, checkCachedKey])
 
   const discoverPublicKey = async () => {
     if (!address || !signMessageAsync) return
@@ -64,7 +65,7 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
     }
   }
 
-  const handleConnect = (connector: any) => {
+  const handleConnect = (connector: Connector) => {
     setError(null)
     connect({ connector })
   }
@@ -158,7 +159,7 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
       <CardContent>
         <div className="space-y-4">
           {connectors.map((connector) => {
-            const getConnectorName = (connector: any) => {
+            const getConnectorName = (connector: Connector) => {
               if (connector.name.includes('MetaMask')) return 'Connect MetaMask'
               if (connector.name === 'Injected Wallet' || connector.name === 'Injected') return 'Connect Wallet'
               return `Connect ${connector.name}`

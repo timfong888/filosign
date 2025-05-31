@@ -1,5 +1,4 @@
 import { publicKeyService } from './public-key-service';
-import { isAddress } from 'viem';
 
 export interface EncryptedPackage {
   encrypted_document: string; // Base64 encoded

@@ -147,7 +147,7 @@ export default function Home() {
               <div className="text-center space-y-6">
                 <h2 className="text-3xl font-bold">Almost Ready!</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Your wallet is connected. Now let's set up encryption so you can securely send and receive documents.
+                  Your wallet is connected. Now let&apos;s set up encryption so you can securely send and receive documents.
                 </p>
                 <div className="max-w-md mx-auto">
                   <WalletConnection
@@ -217,13 +217,7 @@ export default function Home() {
 function SignedDocumentsSection({ userAddress }: { userAddress: string | undefined }) {
   const [documents, setDocuments] = useState<StorageMetadata[]>([]);
 
-  useEffect(() => {
-    if (userAddress) {
-      loadUserDocuments();
-    }
-  }, [userAddress, loadUserDocuments]);
-
-  const loadUserDocuments = async () => {
+  const loadUserDocuments = useCallback(async () => {
     if (!userAddress) return;
     try {
       const userDocs = await localStorageService.getDocumentsForUser(userAddress);
@@ -231,7 +225,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
     } catch (error) {
       console.error('Failed to load documents:', error);
     }
-  };
+  }, [userAddress]);
+
+  useEffect(() => {
+    if (userAddress) {
+      loadUserDocuments();
+    }
+  }, [userAddress, loadUserDocuments]);
 
   const sentDocs = documents.filter(doc => doc.sender_address.toLowerCase() === userAddress?.toLowerCase());
   const receivedDocs = documents.filter(doc => doc.recipient_address.toLowerCase() === userAddress?.toLowerCase());
