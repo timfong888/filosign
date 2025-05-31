@@ -157,18 +157,50 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {connectors.map((connector) => (
-            <Button
-              key={connector.uid}
-              onClick={() => handleConnect(connector)}
-              disabled={isPending}
-              className="w-full"
-              variant={connector.name === 'MetaMask' ? 'default' : 'outline'}
-            >
-              {isPending ? 'Connecting...' : `Connect ${connector.name}`}
-            </Button>
-          ))}
-          
+          {connectors.map((connector) => {
+            const getConnectorName = (connector: any) => {
+              if (connector.name.includes('MetaMask')) return 'Connect MetaMask'
+              if (connector.name === 'Injected Wallet' || connector.name === 'Injected') return 'Connect Wallet'
+              return `Connect ${connector.name}`
+            }
+
+            return (
+              <Button
+                key={connector.uid}
+                onClick={() => handleConnect(connector)}
+                disabled={isPending}
+                className="w-full"
+                variant={connector.name.includes('MetaMask') ? 'default' : 'outline'}
+              >
+                {isPending ? 'Connecting...' : getConnectorName(connector)}
+              </Button>
+            )
+          })}
+
+          {connectors.length === 0 && (
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                No wallet detected. Please install a compatible wallet to continue.
+              </p>
+              <div className="space-y-2">
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('https://metamask.io/download/', '_blank')}
+                  className="w-full"
+                >
+                  Install MetaMask
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => window.open('https://zerion.io/', '_blank')}
+                  className="w-full"
+                >
+                  Install Zerion
+                </Button>
+              </div>
+            </div>
+          )}
+
           {error && (
             <p className="text-sm text-red-600 mt-2">
               {error}

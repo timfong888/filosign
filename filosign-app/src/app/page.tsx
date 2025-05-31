@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { FileText, Shield, Users, Wallet } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
 import { useAccount } from 'wagmi';
@@ -12,6 +13,7 @@ export default function Home() {
   const { address, isConnected } = useAccount();
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   useEffect(() => {
     setIsLoading(false);
@@ -19,6 +21,7 @@ export default function Home() {
 
   const handleWalletConnected = (walletAddress: string, publicKey: string) => {
     setUserPublicKey(publicKey);
+    setIsWalletModalOpen(false); // Close modal when wallet connects
   };
 
   const handleWalletDisconnected = () => {
@@ -59,10 +62,20 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <Button className="flex items-center space-x-2">
-                <Wallet className="h-4 w-4" />
-                <span>Connect Wallet</span>
-              </Button>
+              <Dialog open={isWalletModalOpen} onOpenChange={setIsWalletModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center space-x-2">
+                    <Wallet className="h-4 w-4" />
+                    <span>Connect Wallet</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <WalletConnection
+                    onWalletConnected={handleWalletConnected}
+                    onWalletDisconnected={handleWalletDisconnected}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         </div>

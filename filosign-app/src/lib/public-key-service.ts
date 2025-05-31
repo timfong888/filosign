@@ -1,4 +1,4 @@
-import { hashMessage, recoverPublicKey, getAddress } from 'viem';
+import { hashMessage, recoverPublicKey, getAddress, publicKeyToAddress } from 'viem';
 
 export interface PublicKeyCache {
   [address: string]: {
@@ -30,7 +30,7 @@ export class PublicKeyService {
       const signature = await signMessageAsync({ message });
 
       // Extract public key from signature
-      const publicKey = this.extractPublicKeyFromSignature(message, signature);
+      const publicKey = await this.extractPublicKeyFromSignature(message, signature);
 
       // Validate that the public key matches the wallet address
       if (!this.validatePublicKey(walletAddress, publicKey)) {
@@ -133,13 +133,13 @@ export class PublicKeyService {
   /**
    * Extract public key from message signature
    */
-  private extractPublicKeyFromSignature(message: string, signature: string): string {
+  private async extractPublicKeyFromSignature(message: string, signature: string): Promise<string> {
     try {
       // Create message hash using viem
       const messageHash = hashMessage(message);
 
       // Recover public key from signature using viem
-      const recoveredPublicKey = recoverPublicKey({
+      const recoveredPublicKey = await recoverPublicKey({
         hash: messageHash,
         signature: signature as `0x${string}`
       });
@@ -157,10 +157,14 @@ export class PublicKeyService {
   private validatePublicKey(walletAddress: string, publicKey: string): boolean {
     try {
       // Derive address from public key using viem
-      const derivedAddress = getAddress(publicKey);
+      const derivedAddress = publicKeyToAddress(publicKey as `0x${string}`);
 
-      // Compare addresses (case insensitive)
-      return derivedAddress.toLowerCase() === walletAddress.toLowerCase();
+      // Normalize both addresses to checksum format for comparison
+      const normalizedWalletAddress = getAddress(walletAddress);
+      const normalizedDerivedAddress = getAddress(derivedAddress);
+
+      // Compare addresses
+      return normalizedDerivedAddress === normalizedWalletAddress;
     } catch (error) {
       console.error('Failed to validate public key:', error);
       return false;
