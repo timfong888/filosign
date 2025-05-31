@@ -38,9 +38,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+      <header className="border-b bg-card/80 backdrop-blur-sm border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <Shield className="h-8 w-8 text-primary" />
@@ -74,7 +74,7 @@ export default function Home() {
       <main className="container mx-auto px-4 py-12">
         {!currentUser ? (
           // Landing Page for Non-Connected Users
-          <div className="text-center space-y-12">
+          <div className="text-center space-y-8">
             <div className="space-y-6">
               <h1 className="text-5xl font-bold tracking-tight">
                 Secure Document Signing
@@ -91,10 +91,10 @@ export default function Home() {
             </div>
 
             {/* Features */}
-            <div className="grid md:grid-cols-3 gap-8 mt-16">
+            <div className="grid md:grid-cols-3 gap-8 mt-12">
               <Card>
-                <CardHeader>
-                  <Shield className="h-12 w-12 text-primary mb-4" />
+                <CardHeader className="text-center">
+                  <Shield className="h-12 w-12 text-primary mb-4 mx-auto" />
                   <CardTitle>Secure & Encrypted</CardTitle>
                   <CardDescription>
                     Documents are encrypted using your wallet private key, ensuring only intended recipients can access them.
@@ -103,8 +103,8 @@ export default function Home() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <FileText className="h-12 w-12 text-primary mb-4" />
+                <CardHeader className="text-center">
+                  <FileText className="h-12 w-12 text-primary mb-4 mx-auto" />
                   <CardTitle>Easy Document Sharing</CardTitle>
                   <CardDescription>
                     Upload, sign, and share documents with a simple retrieval ID. No complex setup required.
@@ -113,8 +113,8 @@ export default function Home() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <Users className="h-12 w-12 text-primary mb-4" />
+                <CardHeader className="text-center">
+                  <Users className="h-12 w-12 text-primary mb-4 mx-auto" />
                   <CardTitle>Blockchain Verified</CardTitle>
                   <CardDescription>
                     All signatures are recorded on the blockchain, providing immutable proof of document signing.
@@ -125,7 +125,7 @@ export default function Home() {
           </div>
         ) : (
           // Dashboard for Connected Users
-          <div className="space-y-8">
+          <div className="space-y-6">
             <div className="text-center space-y-4">
               <h2 className="text-3xl font-bold">Welcome back, {currentUser.name}!</h2>
               <p className="text-muted-foreground">
@@ -191,7 +191,7 @@ function SignedDocumentsSection({ currentUser }: { currentUser: MockUser }) {
   const receivedDocs = documents.filter(doc => doc.recipientAddress === currentUser.address);
 
   return (
-    <div className="mt-12 space-y-6">
+    <div className="mt-8 space-y-6">
       <h3 className="text-xl font-semibold">Signed Documents</h3>
 
       {documents.length === 0 ? (
