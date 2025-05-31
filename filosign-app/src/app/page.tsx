@@ -14,8 +14,10 @@ export default function Home() {
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     setIsLoading(false);
   }, []);
 
@@ -28,7 +30,8 @@ export default function Home() {
     setUserPublicKey(null);
   };
 
-  if (isLoading) {
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!isMounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
