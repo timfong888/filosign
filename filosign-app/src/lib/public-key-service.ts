@@ -1,4 +1,4 @@
-import { hashMessage, recoverPublicKey, getAddress, publicKeyToAddress } from 'viem';
+import { hashMessage, recoverPublicKey, getAddress, recoverAddress } from 'viem';
 
 export interface PublicKeyCache {
   [address: string]: {
@@ -32,9 +32,9 @@ export class PublicKeyService {
       // Extract public key from signature
       const publicKey = await this.extractPublicKeyFromSignature(message, signature);
 
-      // Validate that the public key matches the wallet address
-      if (!this.validatePublicKey(walletAddress, publicKey)) {
-        throw new Error('Public key validation failed - derived address does not match wallet address');
+      // Validate that the signature matches the wallet address
+      if (!await this.validateSignature(walletAddress, message, signature)) {
+        throw new Error('Signature validation failed - recovered address does not match wallet address');
       }
 
       // Cache the validated public key
@@ -66,7 +66,7 @@ export class PublicKeyService {
       }
 
       // Verify the key is still valid
-      if (!entry.verified || !this.validatePublicKey(walletAddress, entry.publicKey)) {
+      if (!entry.verified) {
         await this.removeCachedKey(walletAddress);
         return null;
       }
@@ -152,21 +152,27 @@ export class PublicKeyService {
   }
 
   /**
-   * Validate that public key matches wallet address
+   * Validate that signature was created by the wallet address
    */
-  private validatePublicKey(walletAddress: string, publicKey: string): boolean {
+  private async validateSignature(walletAddress: string, message: string, signature: string): Promise<boolean> {
     try {
-      // Derive address from public key using viem
-      const derivedAddress = publicKeyToAddress(publicKey as `0x${string}`);
+      // Create message hash using viem
+      const messageHash = hashMessage(message);
+
+      // Recover the address that created this signature
+      const recoveredAddress = await recoverAddress({
+        hash: messageHash,
+        signature: signature as `0x${string}`
+      });
 
       // Normalize both addresses to checksum format for comparison
       const normalizedWalletAddress = getAddress(walletAddress);
-      const normalizedDerivedAddress = getAddress(derivedAddress);
+      const normalizedRecoveredAddress = getAddress(recoveredAddress);
 
       // Compare addresses
-      return normalizedDerivedAddress === normalizedWalletAddress;
+      return normalizedRecoveredAddress === normalizedWalletAddress;
     } catch (error) {
-      console.error('Failed to validate public key:', error);
+      console.error('Failed to validate signature:', error);
       return false;
     }
   }
