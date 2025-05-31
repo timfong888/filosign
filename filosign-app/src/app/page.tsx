@@ -1,32 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileText, Shield, Users, Wallet } from 'lucide-react';
-import { mockStorage, MockUser, MOCK_USERS, Document } from '@/lib/mock-storage';
+import { WalletConnection } from '@/components/wallet-connection';
+import { useAccount } from 'wagmi';
+import { localStorageService, StorageMetadata } from '@/lib/local-storage-service';
 
 export default function Home() {
-  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
+  const { address, isConnected } = useAccount();
+  const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
-    const user = mockStorage.getCurrentUser();
-    setCurrentUser(user);
     setIsLoading(false);
   }, []);
 
-  const handleConnectWallet = () => {
-    // Mock wallet connection - in real app this would use MetaMask
-    const user = MOCK_USERS[0]; // Default to first user for demo
-    mockStorage.setCurrentUser(user);
-    setCurrentUser(user);
+  const handleWalletConnected = (walletAddress: string, publicKey: string) => {
+    setUserPublicKey(publicKey);
   };
 
-  const handleDisconnectWallet = () => {
-    mockStorage.clearCurrentUser();
-    setCurrentUser(null);
+  const handleWalletDisconnected = () => {
+    setUserPublicKey(null);
   };
 
   if (isLoading) {
@@ -48,20 +44,22 @@ export default function Home() {
           </div>
           
           <div className="flex items-center space-x-4">
-            {currentUser ? (
+            {isConnected && address ? (
               <div className="flex items-center space-x-4">
                 <div className="text-sm">
-                  <div className="font-medium">{currentUser.name}</div>
+                  <div className="font-medium">Connected</div>
                   <div className="text-muted-foreground">
-                    {currentUser.address.substring(0, 6)}...{currentUser.address.substring(38)}
+                    {address.substring(0, 6)}...{address.substring(38)}
                   </div>
                 </div>
-                <Button variant="outline" onClick={handleDisconnectWallet}>
-                  Disconnect
-                </Button>
+                {userPublicKey && (
+                  <div className="text-xs text-green-600">
+                    ✅ Encryption Ready
+                  </div>
+                )}
               </div>
             ) : (
-              <Button onClick={handleConnectWallet} className="flex items-center space-x-2">
+              <Button className="flex items-center space-x-2">
                 <Wallet className="h-4 w-4" />
                 <span>Connect Wallet</span>
               </Button>
@@ -72,7 +70,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12">
-        {!currentUser ? (
+        {!isConnected ? (
           // Landing Page for Non-Connected Users
           <div className="text-center space-y-8">
             <div className="space-y-6">
@@ -84,10 +82,12 @@ export default function Home() {
                 Sign and share documents securely using blockchain technology. 
                 Your documents are encrypted and stored on a decentralized network.
               </p>
-              <Button size="lg" onClick={handleConnectWallet} className="text-lg px-8 py-6">
-                <Wallet className="h-5 w-5 mr-2" />
-                Get Started - Connect Wallet
-              </Button>
+              <div className="max-w-md mx-auto">
+                <WalletConnection
+                  onWalletConnected={handleWalletConnected}
+                  onWalletDisconnected={handleWalletDisconnected}
+                />
+              </div>
             </div>
 
             {/* Features */}
@@ -126,12 +126,29 @@ export default function Home() {
         ) : (
           // Dashboard for Connected Users
           <div className="space-y-6">
-            <div className="text-center space-y-4">
-              <h2 className="text-3xl font-bold">Welcome back, {currentUser.name}!</h2>
-              <p className="text-muted-foreground">
-                What would you like to do today?
-              </p>
-            </div>
+            {!userPublicKey ? (
+              // Show wallet connection setup if public key not ready
+              <div className="text-center space-y-6">
+                <h2 className="text-3xl font-bold">Almost Ready!</h2>
+                <p className="text-muted-foreground max-w-2xl mx-auto">
+                  Your wallet is connected. Now let's set up encryption so you can securely send and receive documents.
+                </p>
+                <div className="max-w-md mx-auto">
+                  <WalletConnection
+                    onWalletConnected={handleWalletConnected}
+                    onWalletDisconnected={handleWalletDisconnected}
+                  />
+                </div>
+              </div>
+            ) : (
+              // Full dashboard when everything is ready
+              <div className="space-y-6">
+                <div className="text-center space-y-4">
+                  <h2 className="text-3xl font-bold">Welcome to FiloSign!</h2>
+                  <p className="text-muted-foreground">
+                    Your wallet is connected and encryption is ready. What would you like to do?
+                  </p>
+                </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
               <Card className="cursor-pointer hover:shadow-lg transition-shadow">
@@ -169,8 +186,10 @@ export default function Home() {
               </Card>
             </div>
 
-            {/* Signed Documents Section */}
-            <SignedDocumentsSection currentUser={currentUser} />
+                {/* Signed Documents Section */}
+                <SignedDocumentsSection userAddress={address} />
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -179,16 +198,27 @@ export default function Home() {
 }
 
 // Signed Documents Section Component
-function SignedDocumentsSection({ currentUser }: { currentUser: MockUser }) {
-  const [documents, setDocuments] = useState<Document[]>([]);
+function SignedDocumentsSection({ userAddress }: { userAddress: string | undefined }) {
+  const [documents, setDocuments] = useState<StorageMetadata[]>([]);
 
   useEffect(() => {
-    const userDocs = mockStorage.getDocumentsByUser(currentUser.address);
-    setDocuments(userDocs);
-  }, [currentUser.address]);
+    if (userAddress) {
+      loadUserDocuments();
+    }
+  }, [userAddress, loadUserDocuments]);
 
-  const sentDocs = documents.filter(doc => doc.senderAddress === currentUser.address);
-  const receivedDocs = documents.filter(doc => doc.recipientAddress === currentUser.address);
+  const loadUserDocuments = async () => {
+    if (!userAddress) return;
+    try {
+      const userDocs = await localStorageService.getDocumentsForUser(userAddress);
+      setDocuments(userDocs);
+    } catch (error) {
+      console.error('Failed to load documents:', error);
+    }
+  };
+
+  const sentDocs = documents.filter(doc => doc.sender_address.toLowerCase() === userAddress?.toLowerCase());
+  const receivedDocs = documents.filter(doc => doc.recipient_address.toLowerCase() === userAddress?.toLowerCase());
 
   return (
     <div className="mt-8 space-y-6">
@@ -212,34 +242,28 @@ function SignedDocumentsSection({ currentUser }: { currentUser: MockUser }) {
               <h4 className="text-lg font-medium mb-3">Documents Sent</h4>
               <div className="space-y-2">
                 {sentDocs.map((doc) => (
-                  <Card key={doc.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrievalId}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              doc.status === 'signed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {doc.status === 'signed' ? 'Signed' : 'Pending'}
+                            <span className="font-medium">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                              Encrypted
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
-                            To: {doc.recipientName}
+                            To: {doc.recipient_address.substring(0, 6)}...{doc.recipient_address.substring(38)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Sent: {new Date(doc.createdAt).toLocaleDateString()} {new Date(doc.createdAt).toLocaleTimeString()}
+                            Sent: {new Date(doc.upload_timestamp).toLocaleDateString()} {new Date(doc.upload_timestamp).toLocaleTimeString()}
                           </p>
-                          {doc.signedAt && (
-                            <p className="text-sm text-muted-foreground">
-                              Signed: {new Date(doc.signedAt).toLocaleDateString()} {new Date(doc.signedAt).toLocaleTimeString()}
-                            </p>
-                          )}
+                          <p className="text-sm text-muted-foreground">
+                            Size: {(doc.file_size / 1024).toFixed(1)} KB
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.title}</p>
+                          <p className="text-sm font-medium">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -255,34 +279,28 @@ function SignedDocumentsSection({ currentUser }: { currentUser: MockUser }) {
               <h4 className="text-lg font-medium mb-3">Documents Received</h4>
               <div className="space-y-2">
                 {receivedDocs.map((doc) => (
-                  <Card key={doc.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrievalId}</span>
-                            <span className={`px-2 py-1 rounded-full text-xs ${
-                              doc.status === 'signed'
-                                ? 'bg-green-100 text-green-800'
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {doc.status === 'signed' ? 'Signed' : 'Pending'}
+                            <span className="font-medium">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                              Available
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
-                            From: {doc.senderName}
+                            From: {doc.sender_address.substring(0, 6)}...{doc.sender_address.substring(38)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Received: {new Date(doc.createdAt).toLocaleDateString()} {new Date(doc.createdAt).toLocaleTimeString()}
+                            Received: {new Date(doc.upload_timestamp).toLocaleDateString()} {new Date(doc.upload_timestamp).toLocaleTimeString()}
                           </p>
-                          {doc.signedAt && (
-                            <p className="text-sm text-muted-foreground">
-                              Signed: {new Date(doc.signedAt).toLocaleDateString()} {new Date(doc.signedAt).toLocaleTimeString()}
-                            </p>
-                          )}
+                          <p className="text-sm text-muted-foreground">
+                            Size: {(doc.file_size / 1024).toFixed(1)} KB
+                          </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.title}</p>
+                          <p className="text-sm font-medium">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>

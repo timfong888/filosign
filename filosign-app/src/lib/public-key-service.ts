@@ -1,4 +1,4 @@
-import { ethers } from 'ethers';
+import { hashMessage, recoverPublicKey, getAddress } from 'viem';
 
 export interface PublicKeyCache {
   [address: string]: {
@@ -15,7 +15,7 @@ export class PublicKeyService {
   /**
    * Discover and cache a public key for a wallet address
    */
-  async discoverPublicKey(walletAddress: string, signer: any): Promise<string> {
+  async discoverPublicKey(walletAddress: string, signMessageAsync: (args: { message: string }) => Promise<string>): Promise<string> {
     try {
       // Check if we already have a valid cached key
       const cachedKey = await this.getPublicKey(walletAddress);
@@ -25,13 +25,13 @@ export class PublicKeyService {
 
       // Generate standard message for key discovery
       const message = this.generateStandardMessage(walletAddress);
-      
-      // Request MetaMask signature
-      const signature = await signer.signMessage(message);
-      
+
+      // Request wallet signature using Wagmi
+      const signature = await signMessageAsync({ message });
+
       // Extract public key from signature
       const publicKey = this.extractPublicKeyFromSignature(message, signature);
-      
+
       // Validate that the public key matches the wallet address
       if (!this.validatePublicKey(walletAddress, publicKey)) {
         throw new Error('Public key validation failed - derived address does not match wallet address');
@@ -39,7 +39,7 @@ export class PublicKeyService {
 
       // Cache the validated public key
       await this.cachePublicKey(walletAddress, publicKey);
-      
+
       return publicKey;
     } catch (error) {
       console.error('Failed to discover public key:', error);
@@ -135,12 +135,15 @@ export class PublicKeyService {
    */
   private extractPublicKeyFromSignature(message: string, signature: string): string {
     try {
-      // Create message hash
-      const messageHash = ethers.utils.hashMessage(message);
-      
-      // Recover public key from signature
-      const recoveredPublicKey = ethers.utils.recoverPublicKey(messageHash, signature);
-      
+      // Create message hash using viem
+      const messageHash = hashMessage(message);
+
+      // Recover public key from signature using viem
+      const recoveredPublicKey = recoverPublicKey({
+        hash: messageHash,
+        signature: signature as `0x${string}`
+      });
+
       return recoveredPublicKey;
     } catch (error) {
       console.error('Failed to extract public key from signature:', error);
@@ -153,9 +156,9 @@ export class PublicKeyService {
    */
   private validatePublicKey(walletAddress: string, publicKey: string): boolean {
     try {
-      // Derive address from public key
-      const derivedAddress = ethers.utils.computeAddress(publicKey);
-      
+      // Derive address from public key using viem
+      const derivedAddress = getAddress(publicKey);
+
       // Compare addresses (case insensitive)
       return derivedAddress.toLowerCase() === walletAddress.toLowerCase();
     } catch (error) {
