@@ -36,7 +36,7 @@
     --secondary: 220 15% 20%;
     --secondary-foreground: 0 0% 100%;
     --muted: 220 15% 20%;
-    --muted-foreground: 0 0% 85%;
+    --muted-foreground: 0 0% 90%;
     --accent: 220 15% 20%;
     --accent-foreground: 0 0% 100%;
     --destructive: 0 62.8% 50%;
@@ -55,5 +55,42 @@
     background: linear-gradient(135deg, hsl(220, 15%, 12%) 0%, hsl(220, 15%, 8%) 100%);
     color: hsl(var(--foreground));
     min-height: 100vh;
+  }
+}
+
+@layer components {
+  /* Enhanced text contrast for better accessibility */
+  .dark .text-muted-foreground {
+    color: hsl(0 0% 90%);
+  }
+
+  .dark .text-gray-400 {
+    color: hsl(0 0% 85%);
+  }
+
+  .dark .text-gray-500 {
+    color: hsl(0 0% 80%);
+  }
+
+  .dark .text-gray-600 {
+    color: hsl(0 0% 75%);
+  }
+
+  /* Ensure upload area text is highly visible */
+  .dark .upload-text {
+    color: hsl(0 0% 95%) !important;
+  }
+
+  .dark .upload-text-secondary {
+    color: hsl(0 0% 85%) !important;
+  }
+
+  /* Better contrast for form labels and descriptions */
+  .dark .form-label {
+    color: hsl(0 0% 95%);
+  }
+
+  .dark .form-description {
+    color: hsl(0 0% 85%);
   }
 }

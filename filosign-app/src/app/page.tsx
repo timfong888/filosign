@@ -6,11 +6,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { FileText, Shield, Users, Wallet } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { localStorageService, StorageMetadata } from '@/lib/local-storage-service';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -27,6 +28,11 @@ export default function Home() {
   };
 
   const handleWalletDisconnected = () => {
+    setUserPublicKey(null);
+  };
+
+  const handleLogout = () => {
+    disconnect();
     setUserPublicKey(null);
   };
 
@@ -63,6 +69,9 @@ export default function Home() {
                     ✅ Encryption Ready
                   </div>
                 )}
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
               </div>
             ) : (
               <Dialog open={isWalletModalOpen} onOpenChange={setIsWalletModalOpen}>
@@ -167,10 +176,10 @@ export default function Home() {
                 </div>
 
             <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-6 w-6" />
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <FileText className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
                     <span>Send Document</span>
                   </CardTitle>
                   <CardDescription>
@@ -184,10 +193,10 @@ export default function Home() {
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="h-6 w-6" />
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <Shield className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
                     <span>Sign Received Document</span>
                   </CardTitle>
                   <CardDescription>
@@ -201,6 +210,8 @@ export default function Home() {
                 </CardContent>
               </Card>
             </div>
+
+
 
                 {/* Signed Documents Section */}
                 <SignedDocumentsSection userAddress={address} />
@@ -258,13 +269,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
               <h4 className="text-lg font-medium mb-3">Documents Sent</h4>
               <div className="space-y-2">
                 {sentDocs.map((doc) => (
-                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrieval_id}</span>
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                            <span className="font-medium group-hover:text-primary transition-colors duration-200">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 group-hover:bg-blue-200 transition-colors duration-200">
                               Encrypted
                             </span>
                           </div>
@@ -279,7 +290,7 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.filename}</p>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors duration-200">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -295,13 +306,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
               <h4 className="text-lg font-medium mb-3">Documents Received</h4>
               <div className="space-y-2">
                 {receivedDocs.map((doc) => (
-                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrieval_id}</span>
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            <span className="font-medium group-hover:text-primary transition-colors duration-200">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
                               Available
                             </span>
                           </div>
@@ -316,7 +327,7 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.filename}</p>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors duration-200">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>

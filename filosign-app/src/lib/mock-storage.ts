@@ -1,11 +1,12 @@
 import { v4 as uuidv4 } from 'uuid';
+import { encryptionService, EncryptedDocument } from './encryption-service';
 
 export interface Document {
   id: string;
   retrievalId: string;
   title: string;
   fileName: string;
-  fileData: string; // base64 encoded PDF
+  encryptedDocument: EncryptedDocument; // New: proper encrypted document
   senderAddress: string;
   senderName: string;
   recipientAddress: string;
@@ -32,24 +33,59 @@ class MockStorage {
   private userKey = 'filosign-current-user';
 
   // Document operations
-  saveDocument(doc: Omit<Document, 'id' | 'retrievalId' | 'createdAt' | 'status'>): Document {
-    const documents = this.getDocuments();
-    const newDoc: Document = {
-      ...doc,
-      id: uuidv4(),
-      retrievalId: this.generateRetrievalId(),
-      createdAt: new Date().toISOString(),
-      status: 'pending'
-    };
-    
-    documents.push(newDoc);
-    localStorage.setItem(this.storageKey, JSON.stringify(documents));
-    return newDoc;
+  async saveDocument(
+    doc: Omit<Document, 'id' | 'retrievalId' | 'createdAt' | 'status' | 'encryptedDocument'>,
+    fileData: string,
+    senderPublicKey: string,
+    recipientPublicKey: string
+  ): Promise<Document> {
+    try {
+      // Encrypt document with dual access (sender and recipient)
+      const encryptedDocument = await encryptionService.encryptDocument(
+        fileData,
+        doc.senderAddress,
+        senderPublicKey,
+        doc.recipientAddress,
+        recipientPublicKey
+      );
+
+      const documents = this.getDocuments();
+      const newDoc: Document = {
+        ...doc,
+        encryptedDocument,
+        id: uuidv4(),
+        retrievalId: this.generateRetrievalId(),
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      documents.push(newDoc);
+      localStorage.setItem(this.storageKey, JSON.stringify(documents));
+      return newDoc;
+    } catch (error) {
+      console.error('Failed to save document:', error);
+      throw new Error('Failed to save document');
+    }
   }
 
   getDocuments(): Document[] {
     const stored = localStorage.getItem(this.storageKey);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+
+    try {
+      const documents = JSON.parse(stored);
+      // Filter out documents with old format (missing encryptedDocument)
+      return documents.filter((doc: any) => {
+        if (!doc.encryptedDocument) {
+          console.warn('Skipping document with old format:', doc.retrievalId);
+          return false;
+        }
+        return true;
+      });
+    } catch (error) {
+      console.error('Failed to parse stored documents:', error);
+      return [];
+    }
   }
 
   getDocumentByRetrievalId(retrievalId: string): Document | null {
@@ -102,30 +138,59 @@ class MockStorage {
     return `FS-${uuidv4().substring(0, 8).toUpperCase()}`;
   }
 
-  // Mock encryption/decryption (just base64 for demo)
-  encryptDocument(fileData: string, recipientAddress: string): string {
-    // In real implementation, this would use the recipient's public key
-    return btoa(fileData + ':encrypted-for:' + recipientAddress);
-  }
-
-  decryptDocument(encryptedData: string, userAddress: string): string | null {
+  // Decrypt document for user
+  async decryptDocumentForUser(document: Document, userAddress: string, userPublicKey: string): Promise<string | null> {
     try {
-      const decoded = atob(encryptedData);
-      const [fileData, , address] = decoded.split(':encrypted-for:');
-      
-      if (address === userAddress) {
-        return fileData;
-      }
-      return null;
-    } catch {
+      return await encryptionService.decryptDocument(
+        document.encryptedDocument,
+        userAddress,
+        userPublicKey
+      );
+    } catch (error) {
+      console.error('Failed to decrypt document:', error);
       return null;
     }
   }
 
-  // Clear all data (for testing)
+  // Check if user can access document
+  async canUserAccessDocument(document: Document, userAddress: string): Promise<{ canAccess: boolean; role: 'sender' | 'recipient' | 'none'; reason?: string }> {
+    try {
+      return await encryptionService.canUserAccessDocument(
+        document.encryptedDocument,
+        userAddress
+      );
+    } catch (error) {
+      console.error('Failed to check document access:', error);
+      return {
+        canAccess: false,
+        role: 'none',
+        reason: 'Access check failed'
+      };
+    }
+  }
+
+
+
+  // Clear all data (for development/testing)
   clearAll(): void {
     localStorage.removeItem(this.storageKey);
     localStorage.removeItem(this.userKey);
+    console.log('All FiloSign data cleared');
+  }
+
+  // Debug function to list all documents
+  debugListDocuments(): void {
+    const documents = this.getDocuments();
+    console.log('All stored documents:', documents);
+    documents.forEach((doc, index) => {
+      console.log(`Document ${index + 1}:`, {
+        retrievalId: doc.retrievalId,
+        senderAddress: doc.senderAddress,
+        recipientAddress: doc.recipientAddress,
+        title: doc.title,
+        status: doc.status
+      });
+    });
   }
 }
 

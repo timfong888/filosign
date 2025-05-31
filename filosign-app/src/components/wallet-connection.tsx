@@ -121,12 +121,21 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
 
         {publicKey && (
           <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-green-600">
-                ✅ Encryption key ready
-              </p>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 text-green-600">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <span className="text-sm font-medium">✅ SUCCESS: Public Key Extracted!</span>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Public Key:</p>
+                <div className="bg-gray-50 p-3 rounded-md border">
+                  <code className="text-xs font-mono break-all text-gray-700">
+                    {publicKey}
+                  </code>
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Public Key: {formatAddress(publicKey)}
+                Your wallet is configured for secure document encryption.
               </p>
             </div>
           </CardContent>

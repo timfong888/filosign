@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Upload, FileText, Shield, Copy, Check } from 'lucide-react';
-import { mockStorage, MockUser, MOCK_USERS } from '@/lib/mock-storage';
+import { mockStorage, MOCK_USERS } from '@/lib/mock-storage';
+import { WalletConnection } from '@/components/wallet-connection';
+import { publicKeyService } from '@/lib/public-key-service';
 
 export default function SendDocument() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recipientAddress, setRecipientAddress] = useState('');
   const [recipientName, setRecipientName] = useState('');
@@ -19,14 +24,19 @@ export default function SendDocument() {
   const [retrievalId, setRetrievalId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    const user = mockStorage.getCurrentUser();
-    if (!user) {
-      router.push('/');
-      return;
-    }
-    setCurrentUser(user);
-  }, [router]);
+  const handleWalletConnected = (walletAddress: string, publicKey: string) => {
+    setUserPublicKey(publicKey);
+  };
+
+  const handleWalletDisconnected = () => {
+    setUserPublicKey(null);
+  };
+
+  const handleLogout = () => {
+    disconnect();
+    setUserPublicKey(null);
+    router.push('/');
+  };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -37,14 +47,14 @@ export default function SendDocument() {
     }
   };
 
-  const handleRecipientSelect = (user: MockUser) => {
+  const handleRecipientSelect = (user: any) => {
     setRecipientAddress(user.address);
     setRecipientName(user.name);
   };
 
   const handleSignAndSecure = async () => {
-    if (!selectedFile || !recipientAddress || !recipientName || !currentUser) {
-      alert('Please fill in all fields');
+    if (!selectedFile || !recipientAddress || !recipientName || !address || !userPublicKey) {
+      alert('Please fill in all fields and ensure wallet is connected with encryption key setup');
       return;
     }
 
@@ -58,16 +68,22 @@ export default function SendDocument() {
         reader.readAsDataURL(selectedFile);
       });
 
-      // Save document with mock encryption
-      const document = mockStorage.saveDocument({
+      // Get recipient's public key
+      const recipientPublicKey = await publicKeyService.getPublicKey(recipientAddress);
+      if (!recipientPublicKey) {
+        alert(`Cannot find public key for recipient address ${recipientAddress}. The recipient must connect their wallet and set up encryption first.`);
+        return;
+      }
+
+      // Save document with proper encryption (dual access)
+      const document = await mockStorage.saveDocument({
         title: selectedFile.name,
         fileName: selectedFile.name,
-        fileData: mockStorage.encryptDocument(fileData, recipientAddress),
-        senderAddress: currentUser.address,
-        senderName: currentUser.name,
+        senderAddress: address,
+        senderName: 'Connected User', // We could get this from ENS or user input later
         recipientAddress,
         recipientName,
-      });
+      }, fileData, userPublicKey, recipientPublicKey);
 
       setRetrievalId(document.retrievalId);
     } catch (error) {
@@ -86,8 +102,39 @@ export default function SendDocument() {
     }
   };
 
-  if (!currentUser) {
-    return <div>Loading...</div>;
+  // Show wallet connection if not connected
+  if (!isConnected || !address) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => router.push('/')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Shield className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold">FiloSign</h1>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-12 max-w-2xl">
+          <div className="text-center space-y-6">
+            <h2 className="text-3xl font-bold">Connect Your Wallet</h2>
+            <p className="text-muted-foreground">
+              Please connect your wallet to send documents securely
+            </p>
+            <WalletConnection
+              onWalletConnected={handleWalletConnected}
+              onWalletDisconnected={handleWalletDisconnected}
+            />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -105,12 +152,17 @@ export default function SendDocument() {
               <h1 className="text-2xl font-bold">FiloSign</h1>
             </div>
           </div>
-          
-          <div className="text-sm">
-            <div className="font-medium">{currentUser.name}</div>
-            <div className="text-muted-foreground">
-              {currentUser.address.substring(0, 6)}...{currentUser.address.substring(38)}
+
+          <div className="flex items-center space-x-4">
+            <div className="text-sm">
+              <div className="font-medium">Connected User</div>
+              <div className="text-muted-foreground">
+                {address.substring(0, 6)}...{address.substring(38)}
+              </div>
             </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
         </div>
       </header>
@@ -120,7 +172,7 @@ export default function SendDocument() {
           <div className="space-y-8">
             <div className="text-center">
               <h2 className="text-3xl font-bold mb-2">Send Document</h2>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground form-description">
                 Upload a document and specify a recipient to generate a secure retrieval ID
               </p>
             </div>
@@ -132,13 +184,13 @@ export default function SendDocument() {
                   <Upload className="h-5 w-5" />
                   <span>Upload Document</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="form-description">
                   Select a PDF document to upload and share securely
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-all duration-200 hover:border-primary hover:bg-primary/5 hover:shadow-md cursor-pointer group">
                     <input
                       type="file"
                       accept=".pdf"
@@ -146,10 +198,10 @@ export default function SendDocument() {
                       className="hidden"
                       id="file-upload"
                     />
-                    <label htmlFor="file-upload" className="cursor-pointer">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <p className="text-lg font-medium">Click to upload PDF</p>
-                      <p className="text-sm text-muted-foreground">or drag and drop</p>
+                    <label htmlFor="file-upload" className="cursor-pointer block">
+                      <FileText className="h-12 w-12 text-gray-300 dark:text-gray-200 mx-auto mb-4 group-hover:text-primary group-hover:scale-110 transition-all duration-200" />
+                      <p className="text-lg font-medium upload-text group-hover:text-primary transition-colors duration-200">Click to upload PDF</p>
+                      <p className="text-sm upload-text-secondary group-hover:text-primary/70 transition-colors duration-200">or drag and drop</p>
                     </label>
                   </div>
                   
@@ -172,14 +224,14 @@ export default function SendDocument() {
             <Card>
               <CardHeader>
                 <CardTitle>Document Recipient</CardTitle>
-                <CardDescription>
+                <CardDescription className="form-description">
                   Specify who should receive and sign this document
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="recipient-address">Recipient Ethereum Address</Label>
+                    <Label htmlFor="recipient-address" className="form-label">Recipient Ethereum Address</Label>
                     <Input
                       id="recipient-address"
                       value={recipientAddress}
@@ -187,9 +239,9 @@ export default function SendDocument() {
                       placeholder="0x..."
                     />
                   </div>
-                  
+
                   <div className="space-y-2">
-                    <Label htmlFor="recipient-name">Recipient Full Name</Label>
+                    <Label htmlFor="recipient-name" className="form-label">Recipient Full Name</Label>
                     <Input
                       id="recipient-name"
                       value={recipientName}
@@ -200,19 +252,19 @@ export default function SendDocument() {
 
                   {/* Quick Select Recipients */}
                   <div className="space-y-2">
-                    <Label>Quick Select (Demo Users)</Label>
+                    <Label className="form-label">Quick Select (Demo Users)</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {MOCK_USERS.filter(user => user.address !== currentUser.address).map((user) => (
+                      {MOCK_USERS.filter(user => user.address !== address).map((user) => (
                         <Button
                           key={user.address}
                           variant="outline"
                           size="sm"
                           onClick={() => handleRecipientSelect(user)}
-                          className="justify-start"
+                          className="justify-start hover:border-primary hover:bg-primary/5 group"
                         >
                           <div className="text-left">
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="font-medium group-hover:text-primary transition-colors duration-200">{user.name}</div>
+                            <div className="text-xs text-muted-foreground group-hover:text-primary/70 transition-colors duration-200">
                               {user.address.substring(0, 6)}...{user.address.substring(38)}
                             </div>
                           </div>
