@@ -27,19 +27,19 @@
 
   .dark {
     --background: 220 15% 8%;
-    --foreground: 0 0% 95%;
+    --foreground: 0 0% 98%;
     --card: 220 15% 12%;
-    --card-foreground: 0 0% 95%;
+    --card-foreground: 0 0% 98%;
     --popover: 220 15% 12%;
-    --popover-foreground: 0 0% 95%;
+    --popover-foreground: 0 0% 98%;
     --primary: 210 100% 60%;
     --primary-foreground: 0 0% 100%;
     --secondary: 220 15% 18%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary-foreground: 0 0% 98%;
     --muted: 220 15% 18%;
-    --muted-foreground: 0 0% 75%;
+    --muted-foreground: 0 0% 85%;
     --accent: 220 15% 18%;
-    --accent-foreground: 0 0% 95%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 15% 25%;
@@ -77,6 +77,19 @@
 
   :not(.dark) {
     color-scheme: light;
+  }
+
+  /* High contrast text enforcement for accessibility */
+  .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .dark .text-foreground {
+    color: hsl(0 0% 98%) !important;
+  }
+
+  .dark .text-muted-foreground {
+    color: hsl(0 0% 85%) !important;
   }
 
   /* Enhanced button hover effects */

@@ -219,8 +219,8 @@ export default function ReceiveDocument() {
           // Retrieval ID Input
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Sign Received Document</h2>
-              <p className="text-muted-foreground form-description">
+              <h2 className="text-3xl font-bold mb-2 text-foreground">Sign Received Document</h2>
+              <p className="text-muted-foreground">
                 Enter the Retrieval ID you received to access and sign the document
               </p>
             </div>
@@ -303,7 +303,7 @@ export default function ReceiveDocument() {
           // Document Preview and Signing
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Document Retrieved</h2>
+              <h2 className="text-3xl font-bold mb-2 text-foreground">Document Retrieved</h2>
               <p className="text-muted-foreground">
                 Review the document below and sign when ready
               </p>
