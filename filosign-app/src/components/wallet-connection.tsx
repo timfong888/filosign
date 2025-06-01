@@ -199,8 +199,8 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
-              <p className="text-sm text-red-600">
+            <div className="alert-error mt-4">
+              <p className="alert-description">
                 {error}
               </p>
             </div>

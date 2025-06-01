@@ -239,15 +239,15 @@ export default function ReceiveDocument() {
                   </div>
 
                   {/* Wallet Verification Info */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="alert-info">
                     <div className="flex items-start space-x-2">
-                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-blue-900">Wallet Verification</p>
-                        <p className="text-blue-700">
+                      <AlertCircle className="h-5 w-5 alert-info-icon mt-0.5" />
+                      <div>
+                        <p className="alert-title">Wallet Verification</p>
+                        <p className="alert-description">
                           Connected wallet: <span className="font-mono">{address}</span>
                         </p>
-                        <p className="text-blue-700 mt-1">
+                        <p className="alert-description mt-1">
                           This must match the recipient address specified by the sender.
                         </p>
                       </div>
@@ -255,12 +255,12 @@ export default function ReceiveDocument() {
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="alert-error">
                       <div className="flex items-start space-x-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                        <div className="text-sm">
-                          <p className="font-medium text-red-900">Error</p>
-                          <p className="text-red-700">{error}</p>
+                        <AlertCircle className="h-5 w-5 alert-error-icon mt-0.5" />
+                        <div>
+                          <p className="alert-title">Error</p>
+                          <p className="alert-description">{error}</p>
                         </div>
                       </div>
                     </div>
@@ -356,9 +356,9 @@ export default function ReceiveDocument() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-700">
-                        <strong>Important:</strong> Signing with MetaMask is the same as signing a document. 
+                    <div className="alert-info">
+                      <p className="alert-description">
+                        <strong>Important:</strong> Signing with MetaMask is the same as signing a document.
                         This action can only be performed by the owner of your private key.
                       </p>
                     </div>

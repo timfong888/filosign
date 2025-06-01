@@ -237,12 +237,12 @@ export default function SendDocument() {
             </div>
 
             {errorMessage && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="alert-error">
                 <div className="flex items-start space-x-2">
-                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <AlertCircle className="h-5 w-5 alert-error-icon mt-0.5" />
                   <div>
-                    <p className="font-medium text-red-900">Error</p>
-                    <p className="text-red-700">{errorMessage}</p>
+                    <p className="alert-title">Error</p>
+                    <p className="alert-description">{errorMessage}</p>
                   </div>
                 </div>
               </div>
@@ -277,11 +277,11 @@ export default function SendDocument() {
                   </div>
                   
                   {selectedFile && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                    <div className="alert-success">
                       <div className="flex items-center space-x-2">
-                        <FileText className="h-5 w-5 text-green-600" />
-                        <span className="font-medium">{selectedFile.name}</span>
-                        <span className="text-sm text-muted-foreground">
+                        <FileText className="h-5 w-5 alert-success-icon" />
+                        <span className="alert-title">{selectedFile.name}</span>
+                        <span className="alert-description">
                           ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
                         </span>
                       </div>
@@ -402,15 +402,15 @@ export default function SendDocument() {
                 so they can access and sign the document.
               </p>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                <p className="text-sm text-blue-800">
-                  <span className="font-medium">Document ID:</span> {retrievalId}
+              <div className="alert-info max-w-md mx-auto">
+                <p className="alert-description">
+                  <span className="alert-title">Document ID:</span> {retrievalId}
                 </p>
-                <p className="text-sm text-blue-800">
-                  <span className="font-medium">Storage:</span> Local Storage (MVP)
+                <p className="alert-description">
+                  <span className="alert-title">Storage:</span> Local Storage (MVP)
                 </p>
-                <p className="text-sm text-blue-800">
-                  <span className="font-medium">Status:</span> Ready for Signing
+                <p className="alert-description">
+                  <span className="alert-title">Status:</span> Ready for Signing
                 </p>
               </div>
             </div>
