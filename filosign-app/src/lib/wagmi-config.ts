@@ -1,6 +1,6 @@
 import { createConfig, http } from 'wagmi'
 import { mainnet, sepolia, filecoinCalibration } from 'wagmi/chains'
-import { injected, metaMask } from 'wagmi/connectors'
+import { metaMask, injected } from 'wagmi/connectors'
 
 // Define the chains we want to support
 export const supportedChains = [mainnet, sepolia, filecoinCalibration] as const
@@ -9,8 +9,13 @@ export const supportedChains = [mainnet, sepolia, filecoinCalibration] as const
 export const wagmiConfig = createConfig({
   chains: supportedChains,
   connectors: [
-    injected(),
-    metaMask(),
+    injected({
+      target: () => ({
+        id: 'injected',
+        name: 'Connect Wallet',
+        provider: typeof window !== 'undefined' ? window.ethereum : undefined,
+      }),
+    }),
   ],
   transports: {
     [mainnet.id]: http(),

@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatAddress, getChainName } from '@/lib/wagmi-config'
 import { publicKeyService } from '@/lib/public-key-service'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import type { Connector } from 'wagmi'
 
 interface WalletConnectionProps {
   onWalletConnected?: (address: string, publicKey: string) => void
@@ -22,16 +23,9 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
   const [publicKey, setPublicKey] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // Check for cached public key when wallet connects
-  useEffect(() => {
-    if (isConnected && address && !publicKey) {
-      checkCachedKey()
-    }
-  }, [isConnected, address])
-
-  const checkCachedKey = async () => {
+  const checkCachedKey = useCallback(async () => {
     if (!address) return
-    
+
     try {
       const cachedKey = await publicKeyService.getPublicKey(address)
       if (cachedKey) {
@@ -44,7 +38,14 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
     } catch (error) {
       console.error('Failed to check cached key:', error)
     }
-  }
+  }, [address, onWalletConnected])
+
+  // Check for cached public key when wallet connects
+  useEffect(() => {
+    if (isConnected && address && !publicKey) {
+      checkCachedKey()
+    }
+  }, [isConnected, address, publicKey, checkCachedKey])
 
   const discoverPublicKey = async () => {
     if (!address || !signMessageAsync) return
@@ -64,7 +65,7 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
     }
   }
 
-  const handleConnect = (connector: any) => {
+  const handleConnect = (connector: Connector) => {
     setError(null)
     connect({ connector })
   }
@@ -120,12 +121,21 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
 
         {publicKey && (
           <CardContent>
-            <div className="space-y-2">
-              <p className="text-sm text-green-600">
-                ✅ Encryption key ready
-              </p>
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 text-green-600">
+                <div className="w-2 h-2 bg-green-600 rounded-full"></div>
+                <span className="text-sm font-medium">✅ SUCCESS: Public Key Extracted!</span>
+              </div>
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground">Public Key:</p>
+                <div className="bg-gray-50 p-3 rounded-md border">
+                  <code className="text-xs font-mono break-all text-gray-700">
+                    {publicKey}
+                  </code>
+                </div>
+              </div>
               <p className="text-xs text-muted-foreground">
-                Public Key: {formatAddress(publicKey)}
+                Your wallet is configured for secure document encryption.
               </p>
             </div>
           </CardContent>
@@ -157,22 +167,43 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {connectors.map((connector) => (
+          {connectors.length > 0 ? (
             <Button
-              key={connector.uid}
-              onClick={() => handleConnect(connector)}
+              onClick={() => handleConnect(connectors[0])}
               disabled={isPending}
               className="w-full"
-              variant={connector.name === 'MetaMask' ? 'default' : 'outline'}
+              size="lg"
             >
-              {isPending ? 'Connecting...' : `Connect ${connector.name}`}
+              {isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Connecting...
+                </>
+              ) : (
+                'Connect Wallet'
+              )}
             </Button>
-          ))}
-          
+          ) : (
+            <div className="text-center space-y-4">
+              <p className="text-sm text-muted-foreground">
+                No wallet detected. Please install MetaMask or another compatible wallet to continue.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => window.open('https://metamask.io/download/', '_blank')}
+                className="w-full"
+              >
+                Install MetaMask
+              </Button>
+            </div>
+          )}
+
           {error && (
-            <p className="text-sm text-red-600 mt-2">
-              {error}
-            </p>
+            <div className="alert-error mt-4">
+              <p className="alert-description">
+                {error}
+              </p>
+            </div>
           )}
         </div>
       </CardContent>

@@ -3,29 +3,42 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { FileText, Shield, Users, Wallet } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { FileText, Shield, Users, Wallet, Key } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
-import { useAccount } from 'wagmi';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { useAccount, useDisconnect } from 'wagmi';
 import { localStorageService, StorageMetadata } from '@/lib/local-storage-service';
 
 export default function Home() {
   const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
     setIsLoading(false);
   }, []);
 
   const handleWalletConnected = (walletAddress: string, publicKey: string) => {
     setUserPublicKey(publicKey);
+    setIsWalletModalOpen(false); // Close modal when wallet connects
   };
 
   const handleWalletDisconnected = () => {
     setUserPublicKey(null);
   };
 
-  if (isLoading) {
+  const handleLogout = () => {
+    disconnect();
+    setUserPublicKey(null);
+  };
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!isMounted || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
@@ -44,6 +57,7 @@ export default function Home() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             {isConnected && address ? (
               <div className="flex items-center space-x-4">
                 <div className="text-sm">
@@ -53,16 +67,35 @@ export default function Home() {
                   </div>
                 </div>
                 {userPublicKey && (
-                  <div className="text-xs text-green-600">
+                  <div className="text-xs text-green-600 dark:text-green-400">
                     ✅ Encryption Ready
                   </div>
                 )}
+                <Button variant="outline" size="sm" onClick={handleLogout}>
+                  Logout
+                </Button>
               </div>
             ) : (
-              <Button className="flex items-center space-x-2">
-                <Wallet className="h-4 w-4" />
-                <span>Connect Wallet</span>
-              </Button>
+              <Dialog open={isWalletModalOpen} onOpenChange={setIsWalletModalOpen}>
+                <DialogTrigger asChild>
+                  <Button className="flex items-center space-x-2">
+                    <Wallet className="h-4 w-4" />
+                    <span>Connect Wallet</span>
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Connect Your Wallet</DialogTitle>
+                    <DialogDescription>
+                      Choose a wallet to connect to FiloSign
+                    </DialogDescription>
+                  </DialogHeader>
+                  <WalletConnection
+                    onWalletConnected={handleWalletConnected}
+                    onWalletDisconnected={handleWalletDisconnected}
+                  />
+                </DialogContent>
+              </Dialog>
             )}
           </div>
         </div>
@@ -131,7 +164,7 @@ export default function Home() {
               <div className="text-center space-y-6">
                 <h2 className="text-3xl font-bold">Almost Ready!</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
-                  Your wallet is connected. Now let's set up encryption so you can securely send and receive documents.
+                  Your wallet is connected. Now let&apos;s set up encryption so you can securely send and receive documents.
                 </p>
                 <div className="max-w-md mx-auto">
                   <WalletConnection
@@ -150,11 +183,11 @@ export default function Home() {
                   </p>
                 </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+            <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <FileText className="h-6 w-6" />
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <FileText className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
                     <span>Send Document</span>
                   </CardTitle>
                   <CardDescription>
@@ -162,16 +195,16 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" onClick={() => window.location.href = '/send'}>
+                  <Button className="w-full" variant="success" onClick={() => window.location.href = '/send'}>
                     Send Document
                   </Button>
                 </CardContent>
               </Card>
 
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Shield className="h-6 w-6" />
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <Shield className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
                     <span>Sign Received Document</span>
                   </CardTitle>
                   <CardDescription>
@@ -184,7 +217,26 @@ export default function Home() {
                   </Button>
                 </CardContent>
               </Card>
+
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <Key className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+                    <span>Setup Encryption Key</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Help others send you encrypted documents by setting up your public key.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/setup-key'}>
+                    Setup Key
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
+
+
 
                 {/* Signed Documents Section */}
                 <SignedDocumentsSection userAddress={address} />
@@ -201,13 +253,7 @@ export default function Home() {
 function SignedDocumentsSection({ userAddress }: { userAddress: string | undefined }) {
   const [documents, setDocuments] = useState<StorageMetadata[]>([]);
 
-  useEffect(() => {
-    if (userAddress) {
-      loadUserDocuments();
-    }
-  }, [userAddress, loadUserDocuments]);
-
-  const loadUserDocuments = async () => {
+  const loadUserDocuments = useCallback(async () => {
     if (!userAddress) return;
     try {
       const userDocs = await localStorageService.getDocumentsForUser(userAddress);
@@ -215,7 +261,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
     } catch (error) {
       console.error('Failed to load documents:', error);
     }
-  };
+  }, [userAddress]);
+
+  useEffect(() => {
+    if (userAddress) {
+      loadUserDocuments();
+    }
+  }, [userAddress, loadUserDocuments]);
 
   const sentDocs = documents.filter(doc => doc.sender_address.toLowerCase() === userAddress?.toLowerCase());
   const receivedDocs = documents.filter(doc => doc.recipient_address.toLowerCase() === userAddress?.toLowerCase());
@@ -242,13 +294,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
               <h4 className="text-lg font-medium mb-3">Documents Sent</h4>
               <div className="space-y-2">
                 {sentDocs.map((doc) => (
-                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrieval_id}</span>
-                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                            <span className="font-medium group-hover:text-primary transition-colors duration-200">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 group-hover:bg-blue-200 transition-colors duration-200">
                               Encrypted
                             </span>
                           </div>
@@ -263,7 +315,7 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.filename}</p>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors duration-200">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -279,13 +331,13 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
               <h4 className="text-lg font-medium mb-3">Documents Received</h4>
               <div className="space-y-2">
                 {receivedDocs.map((doc) => (
-                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-md transition-shadow">
+                  <Card key={doc.retrieval_id} className="cursor-pointer hover:shadow-lg hover:scale-[1.01] transition-all duration-200 group">
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2">
-                            <span className="font-medium">{doc.retrieval_id}</span>
-                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                            <span className="font-medium group-hover:text-primary transition-colors duration-200">{doc.retrieval_id}</span>
+                            <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 group-hover:bg-green-200 transition-colors duration-200">
                               Available
                             </span>
                           </div>
@@ -300,7 +352,7 @@ function SignedDocumentsSection({ userAddress }: { userAddress: string | undefin
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-medium">{doc.filename}</p>
+                          <p className="text-sm font-medium group-hover:text-primary transition-colors duration-200">{doc.filename}</p>
                         </div>
                       </div>
                     </CardContent>

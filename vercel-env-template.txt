@@ -1,0 +1,72 @@
+# FiloSign - Vercel Environment Variables Template
+# Copy and paste these variables into your Vercel project settings
+# Replace placeholder values with your actual configuration
+
+# ===== FEATURE FLAGS =====
+# Controls whether to use PDP/Filecoin storage or mock storage
+# Set to 'true' to enable PDP integration, 'false' for mock storage
+NEXT_PUBLIC_STORAGE_V2=true
+
+# ===== WEB3.STORAGE CONFIGURATION =====
+# Your web3.storage API token - REQUIRED for PDP mode
+# Get your token at https://web3.storage
+# IMPORTANT: Mark this as a SECRET in Vercel dashboard
+WEB3_STORAGE_TOKEN=your_web3_storage_token_here
+
+# ===== PDP CONTRACT CONFIGURATION =====
+# Smart contract addresses for PDP integration
+# Replace with your actual deployed contract addresses
+NEXT_PUBLIC_PDP_CONTRACT_ADDRESS_MAINNET=0x0000000000000000000000000000000000000000
+NEXT_PUBLIC_PDP_CONTRACT_ADDRESS_TESTNET=0x0000000000000000000000000000000000000000
+
+# ===== FILECOIN CONFIGURATION =====
+# Designated Storage Provider ID for Filecoin
+# This is the SP that will store your files (hard-coded for MVP)
+NEXT_PUBLIC_FILECOIN_SP_ID=f01234
+
+# Filecoin API endpoint
+# Default is Hyperspace testnet, change for mainnet
+NEXT_PUBLIC_FILECOIN_API_URL=https://api.hyperspace.node.glif.io/rpc/v1
+
+# ===== ETHEREUM NETWORK CONFIGURATION =====
+# Network ID: 1=Mainnet, 5=Goerli, 80001=Mumbai, etc.
+# For testing, use Goerli (5) or a local hardhat node (31337)
+NEXT_PUBLIC_CHAIN_ID=5
+
+# JSON RPC URL for Ethereum network interaction
+# Public endpoints work but may have rate limits
+NEXT_PUBLIC_RPC_URL=https://ethereum-goerli.publicnode.com
+
+# ===== PAYMENT CONFIGURATION =====
+# Default payment amount in FIL for storage
+# This is the amount that will be paid for each storage deal
+NEXT_PUBLIC_DEFAULT_PAYMENT_AMOUNT=0.1
+
+# Gas price multiplier for faster transactions
+# Higher values = faster confirmations but more expensive
+NEXT_PUBLIC_GAS_PRICE_MULTIPLIER=1.2
+
+# ===== DEVELOPMENT SETTINGS =====
+# Log level: debug, info, warn, error
+# Use 'info' for production, 'debug' for more verbose logs
+LOG_LEVEL=info
+
+# Enable mock wallet for development/testing
+# Set to 'true' to bypass MetaMask requirement (useful for demos)
+NEXT_PUBLIC_ENABLE_MOCK_WALLET=false
+
+# Disable Next.js telemetry
+NEXT_TELEMETRY_DISABLED=1
+
+# ===== BUILD CONFIGURATION =====
+# Ignore ESLint errors during build
+# Recommended for initial deployment until all linting issues are fixed
+NEXTJS_IGNORE_ESLINT=1
+
+# ===== DEPLOYMENT INSTRUCTIONS =====
+# 1. Go to your Vercel project settings
+# 2. Navigate to the "Environment Variables" section
+# 3. Copy and paste each variable above (with your values)
+# 4. Mark WEB3_STORAGE_TOKEN as a SECRET (click "encrypt" toggle)
+# 5. Deploy your project from the feature branch
+#    (factory-branch-simple-storage-using-pdp-pdptool-and-payments-contract)

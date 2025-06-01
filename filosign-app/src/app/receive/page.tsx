@@ -2,31 +2,52 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Search, FileText, Shield, Check, AlertCircle } from 'lucide-react';
-import { mockStorage, MockUser, Document } from '@/lib/mock-storage';
+import { mockStorage, Document } from '@/lib/mock-storage';
+import { WalletConnection } from '@/components/wallet-connection';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+
+// Extended document interface for receive page
+interface DocumentWithDecryption extends Document {
+  decryptedFileData?: string;
+}
 
 export default function ReceiveDocument() {
   const router = useRouter();
-  const [currentUser, setCurrentUser] = useState<MockUser | null>(null);
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [retrievalId, setRetrievalId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [document, setDocument] = useState<Document | null>(null);
+  const [document, setDocument] = useState<DocumentWithDecryption | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
+  const handleWalletConnected = (walletAddress: string, publicKey: string) => {
+    setUserPublicKey(publicKey);
+  };
+
+  const handleWalletDisconnected = () => {
+    setUserPublicKey(null);
+  };
+
+  const handleLogout = () => {
+    disconnect();
+    setUserPublicKey(null);
+    router.push('/');
+  };
+
+  // Client-side mounting guard
   useEffect(() => {
-    const user = mockStorage.getCurrentUser();
-    if (!user) {
-      router.push('/');
-      return;
-    }
-    setCurrentUser(user);
-  }, [router]);
+    setIsMounted(true);
+  }, []);
 
   const handleRetrieveDocument = async () => {
     if (!retrievalId.trim()) {
@@ -34,7 +55,7 @@ export default function ReceiveDocument() {
       return;
     }
 
-    if (!currentUser) {
+    if (!address) {
       setError('Please connect your wallet first');
       return;
     }
@@ -47,30 +68,36 @@ export default function ReceiveDocument() {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const doc = mockStorage.getDocumentByRetrievalId(retrievalId.trim());
-      
+
       if (!doc) {
         setError('Invalid Retrieval ID. Please check and try again.');
         return;
       }
 
-      // Verify wallet address matches recipient
-      if (doc.recipientAddress !== currentUser.address) {
-        setError(`Wrong wallet address. This document is intended for ${doc.recipientAddress}. Please use the correct wallet.`);
-        return;
-      }
+      // Check if user can access this document (sender or recipient)
+      const accessCheck = mockStorage.canUserAccessDocument(doc, address);
 
-      // Try to decrypt document
-      const decryptedData = mockStorage.decryptDocument(doc.fileData, currentUser.address);
-      if (!decryptedData) {
-        setError('Document decryption failed. Please try again.');
-        return;
-      }
-
-      // Update document with decrypted data for preview
-      setDocument({
-        ...doc,
-        fileData: decryptedData
+      console.log('Access verification:', {
+        userAddress: address,
+        senderAddress: doc.senderAddress,
+        recipientAddress: doc.recipientAddress,
+        canAccess: accessCheck.canAccess,
+        role: accessCheck.role,
+        reason: accessCheck.reason
       });
+
+      if (!accessCheck.canAccess) {
+        if (accessCheck.role === 'none') {
+          setError(`Access denied. This document is for sender ${doc.senderAddress} or recipient ${doc.recipientAddress}. Please use the correct wallet.`);
+        } else {
+          setError(`Access denied: ${accessCheck.reason || 'Unknown error'}`);
+        }
+        return;
+      }
+
+      // For MVP, documents are stored without encryption
+      // Just set the document directly
+      setDocument(doc);
 
     } catch (error) {
       console.error('Error retrieving document:', error);
@@ -81,7 +108,7 @@ export default function ReceiveDocument() {
   };
 
   const handleSignDocument = async () => {
-    if (!document || !currentUser) return;
+    if (!document || !address) return;
 
     setIsSigning(true);
 
@@ -90,8 +117,8 @@ export default function ReceiveDocument() {
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Sign the document
-      const success = mockStorage.signDocument(document.retrievalId, currentUser.address);
-      
+      const success = mockStorage.signDocument(document.retrievalId, address);
+
       if (success) {
         setSigned(true);
         // Refresh document to show updated status
@@ -110,8 +137,40 @@ export default function ReceiveDocument() {
     }
   };
 
-  if (!currentUser) {
-    return <div>Loading...</div>;
+  // Show wallet connection if not connected
+  if (!isConnected || !address) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+          <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="flex items-center space-x-4">
+              <Button variant="ghost" onClick={() => router.push('/')}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Back
+              </Button>
+              <div className="flex items-center space-x-2">
+                <Shield className="h-8 w-8 text-primary" />
+                <h1 className="text-2xl font-bold">FiloSign</h1>
+              </div>
+            </div>
+            <ThemeToggle />
+          </div>
+        </header>
+
+        <main className="container mx-auto px-4 py-12 max-w-2xl">
+          <div className="text-center space-y-6">
+            <h2 className="text-3xl font-bold">Connect Your Wallet</h2>
+            <p className="text-muted-foreground">
+              Please connect your wallet to receive and sign documents
+            </p>
+            <WalletConnection
+              onWalletConnected={handleWalletConnected}
+              onWalletDisconnected={handleWalletDisconnected}
+            />
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
@@ -130,11 +189,17 @@ export default function ReceiveDocument() {
             </div>
           </div>
           
-          <div className="text-sm">
-            <div className="font-medium">{currentUser.name}</div>
-            <div className="text-muted-foreground">
-              {currentUser.address.substring(0, 6)}...{currentUser.address.substring(38)}
+          <div className="flex items-center space-x-4">
+            <ThemeToggle />
+            <div className="text-sm">
+              <div className="font-medium">Connected User</div>
+              <div className="text-muted-foreground">
+                {address.substring(0, 6)}...{address.substring(38)}
+              </div>
             </div>
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
         </div>
       </header>
@@ -144,7 +209,7 @@ export default function ReceiveDocument() {
           // Retrieval ID Input
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Sign Received Document</h2>
+              <h2 className="text-3xl font-bold mb-2 text-foreground">Sign Received Document</h2>
               <p className="text-muted-foreground">
                 Enter the Retrieval ID you received to access and sign the document
               </p>
@@ -156,14 +221,14 @@ export default function ReceiveDocument() {
                   <Search className="h-5 w-5" />
                   <span>Retrieval ID</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="form-description">
                   Make sure you are using the same wallet address that the sender specified
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="retrieval-id">Enter Retrieval ID</Label>
+                    <Label htmlFor="retrieval-id" className="form-label">Enter Retrieval ID</Label>
                     <Input
                       id="retrieval-id"
                       value={retrievalId}
@@ -174,15 +239,15 @@ export default function ReceiveDocument() {
                   </div>
 
                   {/* Wallet Verification Info */}
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="alert-info">
                     <div className="flex items-start space-x-2">
-                      <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-blue-900">Wallet Verification</p>
-                        <p className="text-blue-700">
-                          Connected wallet: <span className="font-mono">{currentUser.address}</span>
+                      <AlertCircle className="h-5 w-5 alert-info-icon mt-0.5" />
+                      <div>
+                        <p className="alert-title">Wallet Verification</p>
+                        <p className="alert-description">
+                          Connected wallet: <span className="font-mono">{address}</span>
                         </p>
-                        <p className="text-blue-700 mt-1">
+                        <p className="alert-description mt-1">
                           This must match the recipient address specified by the sender.
                         </p>
                       </div>
@@ -190,12 +255,12 @@ export default function ReceiveDocument() {
                   </div>
 
                   {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                    <div className="alert-error">
                       <div className="flex items-start space-x-2">
-                        <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
-                        <div className="text-sm">
-                          <p className="font-medium text-red-900">Error</p>
-                          <p className="text-red-700">{error}</p>
+                        <AlertCircle className="h-5 w-5 alert-error-icon mt-0.5" />
+                        <div>
+                          <p className="alert-title">Error</p>
+                          <p className="alert-description">{error}</p>
                         </div>
                       </div>
                     </div>
@@ -205,6 +270,7 @@ export default function ReceiveDocument() {
                     onClick={handleRetrieveDocument}
                     disabled={!retrievalId.trim() || isLoading}
                     className="w-full"
+                    variant="success"
                     size="lg"
                   >
                     {isLoading ? (
@@ -227,7 +293,7 @@ export default function ReceiveDocument() {
           // Document Preview and Signing
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Document Retrieved</h2>
+              <h2 className="text-3xl font-bold mb-2 text-foreground">Document Retrieved</h2>
               <p className="text-muted-foreground">
                 Review the document below and sign when ready
               </p>
@@ -290,9 +356,9 @@ export default function ReceiveDocument() {
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                      <p className="text-sm text-blue-700">
-                        <strong>Important:</strong> Signing with MetaMask is the same as signing a document. 
+                    <div className="alert-info">
+                      <p className="alert-description">
+                        <strong>Important:</strong> Signing with MetaMask is the same as signing a document.
                         This action can only be performed by the owner of your private key.
                       </p>
                     </div>
@@ -301,6 +367,7 @@ export default function ReceiveDocument() {
                       onClick={handleSignDocument}
                       disabled={isSigning}
                       className="w-full"
+                      variant="success"
                       size="lg"
                     >
                       {isSigning ? (

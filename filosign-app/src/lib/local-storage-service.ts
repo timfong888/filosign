@@ -281,18 +281,19 @@ export class LocalStorageService {
   /**
    * Validate encrypted package structure
    */
-  private validateEncryptedPackage(pkg: any): pkg is EncryptedPackage {
+  private validateEncryptedPackage(pkg: unknown): pkg is EncryptedPackage {
     return (
       typeof pkg === 'object' &&
-      typeof pkg.encrypted_document === 'string' &&
-      typeof pkg.encrypted_key_for_sender === 'string' &&
-      typeof pkg.encrypted_key_for_recipient === 'string' &&
-      typeof pkg.sender_address === 'string' &&
-      typeof pkg.recipient_address === 'string' &&
-      typeof pkg.filename === 'string' &&
-      typeof pkg.file_size === 'number' &&
-      typeof pkg.timestamp === 'number' &&
-      typeof pkg.retrieval_id === 'string'
+      pkg !== null &&
+      typeof (pkg as Record<string, unknown>).encrypted_document === 'string' &&
+      typeof (pkg as Record<string, unknown>).encrypted_key_for_sender === 'string' &&
+      typeof (pkg as Record<string, unknown>).encrypted_key_for_recipient === 'string' &&
+      typeof (pkg as Record<string, unknown>).sender_address === 'string' &&
+      typeof (pkg as Record<string, unknown>).recipient_address === 'string' &&
+      typeof (pkg as Record<string, unknown>).filename === 'string' &&
+      typeof (pkg as Record<string, unknown>).file_size === 'number' &&
+      typeof (pkg as Record<string, unknown>).timestamp === 'number' &&
+      typeof (pkg as Record<string, unknown>).retrieval_id === 'string'
     );
   }
 
