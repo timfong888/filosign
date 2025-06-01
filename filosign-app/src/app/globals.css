@@ -1,50 +1,71 @@
 @import "tailwindcss";
-/* Cache buster v4.0 - COMPREHENSIVE WHITE TEXT ENFORCEMENT */
+/* FiloSign Color System - Human Readable Colors */
 
 @layer base {
+  /* LIGHT MODE COLORS - Clean and Professional */
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 5%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 5%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 5%;
-    --primary: 0 0% 10%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 10%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 10%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 10%;
+    /* Backgrounds */
+    --background: 0 0% 100%;           /* Pure White */
+    --card: 0 0% 100%;                 /* Pure White */
+    --popover: 0 0% 100%;              /* Pure White */
+    --secondary: 0 0% 96%;             /* Light Gray */
+    --muted: 0 0% 96%;                 /* Light Gray */
+    --accent: 0 0% 96%;                /* Light Gray */
+
+    /* Text Colors */
+    --foreground: 0 0% 9%;             /* Near Black */
+    --card-foreground: 0 0% 9%;        /* Near Black */
+    --popover-foreground: 0 0% 9%;     /* Near Black */
+    --secondary-foreground: 0 0% 9%;   /* Near Black */
+    --accent-foreground: 0 0% 9%;      /* Near Black */
+    --muted-foreground: 0 0% 45%;      /* Medium Gray */
+
+    /* Interactive Elements */
+    --primary: 0 0% 9%;                /* Near Black */
+    --primary-foreground: 0 0% 98%;    /* Off White */
+
+    /* Borders and Inputs */
+    --border: 0 0% 89%;                /* Light Border Gray */
+    --input: 0 0% 89%;                 /* Light Input Gray */
+    --ring: 0 0% 9%;                   /* Near Black Focus Ring */
+
+    /* Status Colors */
+    --destructive: 0 84% 60%;          /* Red */
+    --destructive-foreground: 0 0% 98%; /* Off White */
+
     --radius: 0.5rem;
   }
 
+  /* DARK MODE COLORS - High Contrast and Readable */
   .dark {
-    --background: 220 15% 8%;
-    --foreground: 0 0% 98%;
-    --card: 220 15% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 220 15% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 210 100% 60%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 18%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 220 15% 18%;
-    --muted-foreground: 0 0% 85%;
-    --accent: 220 15% 18%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 25%;
-    --input: 220 15% 18%;
-    --ring: 210 100% 60%;
+    /* Backgrounds - True Dark Colors */
+    --background: 222 84% 5%;          /* Very Dark Blue-Gray (Almost Black) */
+    --card: 222 84% 8%;                /* Dark Blue-Gray */
+    --popover: 222 84% 8%;             /* Dark Blue-Gray */
+    --secondary: 217 33% 17%;          /* Medium Dark Blue-Gray */
+    --muted: 217 33% 17%;              /* Medium Dark Blue-Gray */
+    --accent: 217 33% 17%;             /* Medium Dark Blue-Gray */
+
+    /* Text Colors - High Contrast White/Light */
+    --foreground: 0 0% 98%;            /* Near White */
+    --card-foreground: 0 0% 98%;       /* Near White */
+    --popover-foreground: 0 0% 98%;    /* Near White */
+    --secondary-foreground: 0 0% 98%;  /* Near White */
+    --accent-foreground: 0 0% 98%;     /* Near White */
+    --muted-foreground: 0 0% 85%;      /* Light Gray */
+
+    /* Interactive Elements */
+    --primary: 210 100% 60%;           /* Bright Blue */
+    --primary-foreground: 0 0% 100%;   /* Pure White */
+
+    /* Borders and Inputs */
+    --border: 217 33% 25%;             /* Medium Border Gray */
+    --input: 217 33% 17%;              /* Dark Input Background */
+    --ring: 210 100% 60%;              /* Bright Blue Focus Ring */
+
+    /* Status Colors */
+    --destructive: 0 63% 50%;          /* Red */
+    --destructive-foreground: 0 0% 100%; /* Pure White */
   }
 }
 
@@ -52,25 +73,25 @@
   * {
     border-color: hsl(var(--border));
   }
+
   body {
-    background: hsl(var(--background));
     color: hsl(var(--foreground));
     min-height: 100vh;
   }
 
-  /* Dark mode gradient background */
-  .dark body {
-    background: linear-gradient(135deg, hsl(220, 15%, 12%) 0%, hsl(220, 15%, 8%) 100%);
+  /* LIGHT MODE - Clean White Background */
+  body:not(.dark) {
+    background: hsl(0, 0%, 100%);  /* Pure White */
   }
 
-  /* Light mode gradient background */
-  body:not(.dark) {
-    background: linear-gradient(135deg, hsl(0, 0%, 98%) 0%, hsl(0, 0%, 95%) 100%);
+  /* DARK MODE - True Dark Background */
+  .dark body {
+    background: hsl(222, 84%, 5%);  /* Very Dark Blue-Gray (Almost Black) */
   }
 }
 
 @layer components {
-  /* Let the CSS variables handle theming naturally */
+  /* COLOR SCHEME DECLARATIONS */
   .dark {
     color-scheme: dark;
   }
@@ -79,17 +100,17 @@
     color-scheme: light;
   }
 
-  /* High contrast text enforcement for accessibility */
+  /* ACCESSIBILITY - High Contrast Text Enforcement */
   .dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6 {
-    color: hsl(0 0% 98%) !important;
+    color: hsl(0, 0%, 98%) !important;  /* Near White for all headings */
   }
 
   .dark .text-foreground {
-    color: hsl(0 0% 98%) !important;
+    color: hsl(0, 0%, 98%) !important;  /* Near White for primary text */
   }
 
   .dark .text-muted-foreground {
-    color: hsl(0 0% 85%) !important;
+    color: hsl(0, 0%, 85%) !important;  /* Light Gray for secondary text */
   }
 
   /* Enhanced button hover effects */
