@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Upload, FileText, Shield, Copy, Check, AlertCircle, Wallet } from 'lucide-react';
-import { MOCK_USERS } from '@/lib/mock-storage';
+import { MOCK_USERS, MockUser, mockStorage } from '@/lib/mock-storage';
 import { useUploadLocal } from '@/lib/hooks/use-upload-local';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { WalletConnection } from '@/components/wallet-connection';
@@ -113,8 +113,8 @@ export default function SendDocument() {
   };
 
   const handleSignAndSecure = async () => {
-    if (!selectedFile || !recipientAddress || !recipientName || !currentUser) {
-      setErrorMessage('Please fill in all fields');
+    if (!selectedFile || !recipientAddress || !recipientName || !address) {
+      setErrorMessage('Please fill in all fields and connect your wallet');
       return;
     }
 
@@ -159,8 +159,8 @@ export default function SendDocument() {
           title: selectedFile.name,
           fileName: selectedFile.name,
           fileData: mockStorage.encryptDocument(fileData, recipientAddress),
-          senderAddress: currentUser.address,
-          senderName: currentUser.name,
+          senderAddress: address,
+          senderName: 'Current User', // Using placeholder since we don't have user name
           recipientAddress,
           recipientName,
         });
