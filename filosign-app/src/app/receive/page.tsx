@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,7 @@ export default function ReceiveDocument() {
   const [error, setError] = useState<string | null>(null);
   const [isSigning, setIsSigning] = useState(false);
   const [signed, setSigned] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
   const handleWalletConnected = (walletAddress: string, publicKey: string) => {
     setUserPublicKey(publicKey);
@@ -42,6 +43,11 @@ export default function ReceiveDocument() {
     setUserPublicKey(null);
     router.push('/');
   };
+
+  // Client-side mounting guard
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const handleRetrieveDocument = async () => {
     if (!retrievalId.trim()) {

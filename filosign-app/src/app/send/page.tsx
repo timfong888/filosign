@@ -27,6 +27,7 @@ export default function SendDocument() {
   const [retrievalId, setRetrievalId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
 
   // Local storage upload state
   const {
@@ -53,6 +54,11 @@ export default function SendDocument() {
     router.push('/');
   };
 
+  // Client-side mounting guard
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Update UI based on upload phase
   useEffect(() => {
     if (phase === 'complete' && result) {
@@ -65,6 +71,11 @@ export default function SendDocument() {
       setIsUploading(true);
     }
   }, [phase, result, uploadError]);
+
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!isMounted) {
+    return null;
+  }
 
   // Show wallet connection if not connected
   if (!isConnected || !address) {
@@ -121,6 +132,11 @@ export default function SendDocument() {
   const handleSignAndSecure = async () => {
     if (!selectedFile || !recipientAddress || !recipientName || !address) {
       setErrorMessage('Please fill in all fields and connect your wallet');
+      return;
+    }
+
+    if (!userPublicKey) {
+      setErrorMessage('Public key not discovered. Please ensure your wallet encryption is set up.');
       return;
     }
 
@@ -400,9 +416,20 @@ export default function SendDocument() {
                   </div>
                 )}
 
+                {isWalletConnected && !userPublicKey && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="h-5 w-5 text-orange-600" />
+                      <p className="text-sm text-orange-800">
+                        Please setup your encryption key to continue. Click "Setup Encryption Key" in the wallet connection.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleSignAndSecure}
-                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !isWalletConnected}
+                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !isWalletConnected || !userPublicKey}
                   className="w-full"
                   variant="success"
                   size="lg"
