@@ -4,16 +4,11 @@ import { encryptionService, EncryptedDocument } from './encryption-service';
 export interface Document {
   id: string;
   retrievalId: string;
-  title: string;
-  fileName: string;
-  encryptedDocument: EncryptedDocument; // New: proper encrypted document
-  senderAddress: string;
-  senderName: string;
-  recipientAddress: string;
-  recipientName: string;
+  encryptedDocument: EncryptedDocument; // Privacy-preserving encrypted document
   createdAt: string;
-  signedAt?: string;
   status: 'pending' | 'signed';
+  // NOTE: No sender/recipient addresses, names, titles, or filenames stored
+  // This prevents metadata leakage and relationship analysis
 }
 
 export interface MockUser {
@@ -34,24 +29,20 @@ class MockStorage {
 
   // Document operations
   async saveDocument(
-    doc: Omit<Document, 'id' | 'retrievalId' | 'createdAt' | 'status' | 'encryptedDocument'>,
     fileData: string,
-    senderPublicKey: string,
-    recipientPublicKey: string
+    alicePublicKey: string,
+    bobPublicKey: string
   ): Promise<Document> {
     try {
-      // Encrypt document with dual access (sender and recipient)
+      // Encrypt document with privacy-preserving dual access
       const encryptedDocument = await encryptionService.encryptDocument(
         fileData,
-        doc.senderAddress,
-        senderPublicKey,
-        doc.recipientAddress,
-        recipientPublicKey
+        alicePublicKey,
+        bobPublicKey
       );
 
       const documents = this.getDocuments();
       const newDoc: Document = {
-        ...doc,
         encryptedDocument,
         id: uuidv4(),
         retrievalId: this.generateRetrievalId(),
@@ -93,28 +84,26 @@ class MockStorage {
     return documents.find(doc => doc.retrievalId === retrievalId) || null;
   }
 
-  getDocumentsByUser(userAddress: string): Document[] {
-    const documents = this.getDocuments();
-    return documents.filter(doc => 
-      doc.senderAddress === userAddress || doc.recipientAddress === userAddress
-    );
-  }
+  // Note: getDocumentsByUser removed - no longer possible without storing addresses
+  // This is intentional for privacy preservation
 
-  signDocument(retrievalId: string, signerAddress: string): boolean {
+  async signDocument(retrievalId: string, userPublicKey: string): Promise<boolean> {
     const documents = this.getDocuments();
     const docIndex = documents.findIndex(doc => doc.retrievalId === retrievalId);
-    
+
     if (docIndex === -1) return false;
-    
+
     const doc = documents[docIndex];
-    if (doc.recipientAddress !== signerAddress) return false;
-    
+
+    // Use cryptographic verification instead of address checking
+    const accessCheck = await this.canUserAccessDocument(doc, userPublicKey);
+    if (!accessCheck.canAccess) return false;
+
     documents[docIndex] = {
       ...doc,
-      status: 'signed',
-      signedAt: new Date().toISOString()
+      status: 'signed'
     };
-    
+
     localStorage.setItem(this.storageKey, JSON.stringify(documents));
     return true;
   }
@@ -138,12 +127,11 @@ class MockStorage {
     return `FS-${uuidv4().substring(0, 8).toUpperCase()}`;
   }
 
-  // Decrypt document for user
-  async decryptDocumentForUser(document: Document, userAddress: string, userPublicKey: string): Promise<string | null> {
+  // Decrypt document for user (privacy-preserving)
+  async decryptDocumentForUser(document: Document, userPublicKey: string): Promise<string | null> {
     try {
       return await encryptionService.decryptDocument(
         document.encryptedDocument,
-        userAddress,
         userPublicKey
       );
     } catch (error) {
@@ -152,12 +140,12 @@ class MockStorage {
     }
   }
 
-  // Check if user can access document
-  async canUserAccessDocument(document: Document, userAddress: string): Promise<{ canAccess: boolean; role: 'sender' | 'recipient' | 'none'; reason?: string }> {
+  // Check if user can access document (privacy-preserving)
+  async canUserAccessDocument(document: Document, userPublicKey: string): Promise<{ canAccess: boolean; role: 'alice' | 'bob' | 'none'; reason?: string }> {
     try {
       return await encryptionService.canUserAccessDocument(
         document.encryptedDocument,
-        userAddress
+        userPublicKey
       );
     } catch (error) {
       console.error('Failed to check document access:', error);
@@ -178,17 +166,17 @@ class MockStorage {
     console.log('All FiloSign data cleared');
   }
 
-  // Debug function to list all documents
+  // Debug function to list all documents (privacy-preserving)
   debugListDocuments(): void {
     const documents = this.getDocuments();
-    console.log('All stored documents:', documents);
+    console.log('All stored documents (privacy-preserving):', documents);
     documents.forEach((doc, index) => {
       console.log(`Document ${index + 1}:`, {
         retrievalId: doc.retrievalId,
-        senderAddress: doc.senderAddress,
-        recipientAddress: doc.recipientAddress,
-        title: doc.title,
-        status: doc.status
+        status: doc.status,
+        createdAt: doc.createdAt,
+        encryptionMethod: doc.encryptedDocument.encryptionMethod
+        // NOTE: No addresses, names, or titles shown - privacy preserved
       });
     });
   }

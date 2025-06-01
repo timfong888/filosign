@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": ".next",
+  "framework": "nextjs",
+  "github": {
+    "silent": true,
+    "autoJobCancelation": true
+  },
+  "git": {
+    "deploymentEnabled": {
+      "main": true,
+      "factory-branch-simple-storage-using-pdp-pdptool-and-payments-contract": true
+    }
+  },
+  "env": {
+    "NEXT_PUBLIC_STORAGE_V2": "true",
+    "NEXT_PUBLIC_CHAIN_ID": "5",
+    "NEXT_PUBLIC_RPC_URL": "https://ethereum-goerli.publicnode.com",
+    "NEXT_PUBLIC_FILECOIN_SP_ID": "f01234",
+    "NEXT_PUBLIC_FILECOIN_API_URL": "https://api.hyperspace.node.glif.io/rpc/v1",
+    "NEXT_PUBLIC_DEFAULT_PAYMENT_AMOUNT": "0.1",
+    "NEXT_PUBLIC_GAS_PRICE_MULTIPLIER": "1.2",
+    "NEXT_PUBLIC_ENABLE_MOCK_WALLET": "false",
+    "LOG_LEVEL": "info",
+    "NEXT_TELEMETRY_DISABLED": "1"
+  },
+  "build": {
+    "env": {
+      "NEXTJS_IGNORE_ESLINT": "1"
+    }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' https://*.infura.io https://*.web3.storage https://*.ipfs.dweb.link https://*.goerli.publicnode.com; img-src 'self' data: blob: https://*.ipfs.dweb.link; style-src 'self' 'unsafe-inline'; font-src 'self'; frame-src 'self'"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ],
+  "regions": ["iad1"],
+  "public": false
+}

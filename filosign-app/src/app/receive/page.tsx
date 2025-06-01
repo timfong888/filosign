@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { ArrowLeft, Search, FileText, Shield, Check, AlertCircle } from 'lucide-react';
 import { mockStorage, Document } from '@/lib/mock-storage';
 import { WalletConnection } from '@/components/wallet-connection';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 // Extended document interface for receive page
 interface DocumentWithDecryption extends Document {
@@ -162,6 +163,7 @@ export default function ReceiveDocument() {
                 <h1 className="text-2xl font-bold">FiloSign</h1>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         </header>
 
@@ -198,6 +200,7 @@ export default function ReceiveDocument() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <div className="text-sm">
               <div className="font-medium">Connected User</div>
               <div className="text-muted-foreground">
@@ -277,6 +280,7 @@ export default function ReceiveDocument() {
                     onClick={handleRetrieveDocument}
                     disabled={!retrievalId.trim() || isLoading}
                     className="w-full"
+                    variant="success"
                     size="lg"
                   >
                     {isLoading ? (
@@ -373,6 +377,7 @@ export default function ReceiveDocument() {
                       onClick={handleSignDocument}
                       disabled={isSigning}
                       className="w-full"
+                      variant="success"
                       size="lg"
                     >
                       {isSigning ? (

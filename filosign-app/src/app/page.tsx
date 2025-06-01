@@ -4,8 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { FileText, Shield, Users, Wallet } from 'lucide-react';
+import { FileText, Shield, Users, Wallet, Key } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAccount, useDisconnect } from 'wagmi';
 import { localStorageService, StorageMetadata } from '@/lib/local-storage-service';
 
@@ -56,6 +57,7 @@ export default function Home() {
           </div>
           
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             {isConnected && address ? (
               <div className="flex items-center space-x-4">
                 <div className="text-sm">
@@ -65,7 +67,7 @@ export default function Home() {
                   </div>
                 </div>
                 {userPublicKey && (
-                  <div className="text-xs text-green-600">
+                  <div className="text-xs text-green-600 dark:text-green-400">
                     ✅ Encryption Ready
                   </div>
                 )}
@@ -175,7 +177,7 @@ export default function Home() {
                   </p>
                 </div>
 
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
               <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
@@ -187,7 +189,7 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button className="w-full" onClick={() => window.location.href = '/send'}>
+                  <Button className="w-full" variant="success" onClick={() => window.location.href = '/send'}>
                     Send Document
                   </Button>
                 </CardContent>
@@ -206,6 +208,23 @@ export default function Home() {
                 <CardContent>
                   <Button variant="outline" className="w-full" onClick={() => window.location.href = '/receive'}>
                     Sign Document
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="cursor-pointer hover:shadow-xl hover:scale-[1.02] transition-all duration-200 group">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2 group-hover:text-primary transition-colors duration-200">
+                    <Key className="h-6 w-6 group-hover:scale-110 transition-transform duration-200" />
+                    <span>Setup Encryption Key</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Help others send you encrypted documents by setting up your public key.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button variant="outline" className="w-full" onClick={() => window.location.href = '/setup-key'}>
+                    Setup Key
                   </Button>
                 </CardContent>
               </Card>

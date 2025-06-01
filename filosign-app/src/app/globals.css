@@ -1,4 +1,5 @@
 @import "tailwindcss";
+/* Cache buster v4.0 - COMPREHENSIVE WHITE TEXT ENFORCEMENT */
 
 @layer base {
   :root {
@@ -25,25 +26,25 @@
   }
 
   .dark {
-    --background: 220 15% 12%;
-    --foreground: 0 0% 100%;
-    --card: 220 15% 16%;
-    --card-foreground: 0 0% 100%;
-    --popover: 220 15% 16%;
-    --popover-foreground: 0 0% 100%;
-    --primary: 0 0% 100%;
-    --primary-foreground: 220 15% 12%;
-    --secondary: 220 15% 20%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 220 15% 20%;
-    --muted-foreground: 0 0% 90%;
-    --accent: 220 15% 20%;
-    --accent-foreground: 0 0% 100%;
+    --background: 220 15% 8%;
+    --foreground: 0 0% 95%;
+    --card: 220 15% 12%;
+    --card-foreground: 0 0% 95%;
+    --popover: 220 15% 12%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 210 100% 60%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 15% 18%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 220 15% 18%;
+    --muted-foreground: 0 0% 75%;
+    --accent: 220 15% 18%;
+    --accent-foreground: 0 0% 95%;
     --destructive: 0 62.8% 50%;
     --destructive-foreground: 0 0% 100%;
     --border: 220 15% 25%;
-    --input: 220 15% 20%;
-    --ring: 0 0% 90%;
+    --input: 220 15% 18%;
+    --ring: 210 100% 60%;
   }
 }
 
@@ -52,45 +53,49 @@
     border-color: hsl(var(--border));
   }
   body {
-    background: linear-gradient(135deg, hsl(220, 15%, 12%) 0%, hsl(220, 15%, 8%) 100%);
+    background: hsl(var(--background));
     color: hsl(var(--foreground));
     min-height: 100vh;
+  }
+
+  /* Dark mode gradient background */
+  .dark body {
+    background: linear-gradient(135deg, hsl(220, 15%, 12%) 0%, hsl(220, 15%, 8%) 100%);
+  }
+
+  /* Light mode gradient background */
+  body:not(.dark) {
+    background: linear-gradient(135deg, hsl(0, 0%, 98%) 0%, hsl(0, 0%, 95%) 100%);
   }
 }
 
 @layer components {
-  /* Enhanced text contrast for better accessibility */
-  .dark .text-muted-foreground {
-    color: hsl(0 0% 90%);
+  /* Let the CSS variables handle theming naturally */
+  .dark {
+    color-scheme: dark;
   }
 
-  .dark .text-gray-400 {
-    color: hsl(0 0% 85%);
+  :not(.dark) {
+    color-scheme: light;
   }
 
-  .dark .text-gray-500 {
-    color: hsl(0 0% 80%);
+  /* Enhanced button hover effects */
+  .enhanced-button-hover {
+    transition: all 0.2s ease-in-out;
   }
 
-  .dark .text-gray-600 {
-    color: hsl(0 0% 75%);
+  .enhanced-button-hover:hover:not(:disabled) {
+    transform: translateY(-1px) scale(1.02);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
   }
 
-  /* Ensure upload area text is highly visible */
-  .dark .upload-text {
-    color: hsl(0 0% 95%) !important;
+  .dark .enhanced-button-hover:hover:not(:disabled) {
+    background: hsl(220, 15%, 85%) !important;
+    color: hsl(220, 15%, 12%) !important;
+    box-shadow: 0 8px 25px rgba(255, 255, 255, 0.1);
   }
 
-  .dark .upload-text-secondary {
-    color: hsl(0 0% 85%) !important;
-  }
-
-  /* Better contrast for form labels and descriptions */
-  .dark .form-label {
-    color: hsl(0 0% 95%);
-  }
-
-  .dark .form-description {
-    color: hsl(0 0% 85%);
+  .enhanced-button-hover:active:not(:disabled) {
+    transform: translateY(0) scale(0.98);
   }
 }

@@ -7,10 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ArrowLeft, Upload, FileText, Shield, Copy, Check } from 'lucide-react';
-import { mockStorage, MOCK_USERS } from '@/lib/mock-storage';
+import { ArrowLeft, Upload, FileText, Shield, Copy, Check, AlertCircle, Wallet } from 'lucide-react';
+import { MOCK_USERS } from '@/lib/mock-storage';
+import { useUploadLocal, UploadPhase } from '@/lib/hooks/use-upload-local';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { WalletConnection } from '@/components/wallet-connection';
-import { publicKeyService } from '@/lib/public-key-service';
+
+// Using local storage for MVP
 
 export default function SendDocument() {
   const router = useRouter();
@@ -23,6 +26,18 @@ export default function SendDocument() {
   const [isUploading, setIsUploading] = useState(false);
   const [retrievalId, setRetrievalId] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Local storage upload state
+  const {
+    phase,
+    progress,
+    result,
+    error: uploadError,
+    isWalletConnected,
+    walletAddress,
+    startUpload
+  } = useUploadLocal();
 
   const handleWalletConnected = (walletAddress: string, publicKey: string) => {
     setUserPublicKey(publicKey);
@@ -32,81 +47,24 @@ export default function SendDocument() {
     setUserPublicKey(null);
   };
 
-  const handleLogout = () => {
-    disconnect();
-    setUserPublicKey(null);
-    router.push('/');
-  };
-
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setSelectedFile(file);
-    } else {
-      alert('Please select a PDF file');
-    }
-  };
-
-  const handleRecipientSelect = (user: any) => {
-    setRecipientAddress(user.address);
-    setRecipientName(user.name);
-  };
-
-  const handleSignAndSecure = async () => {
-    if (!selectedFile || !recipientAddress || !recipientName || !address || !userPublicKey) {
-      alert('Please fill in all fields and ensure wallet is connected with encryption key setup');
-      return;
-    }
-
-    setIsUploading(true);
-
-    try {
-      // Convert file to base64
-      const fileData = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.readAsDataURL(selectedFile);
-      });
-
-      // Get recipient's public key
-      const recipientPublicKey = await publicKeyService.getPublicKey(recipientAddress);
-      if (!recipientPublicKey) {
-        alert(`Cannot find public key for recipient address ${recipientAddress}. The recipient must connect their wallet and set up encryption first.`);
-        return;
-      }
-
-      // Save document with proper encryption (dual access)
-      const document = await mockStorage.saveDocument({
-        title: selectedFile.name,
-        fileName: selectedFile.name,
-        senderAddress: address,
-        senderName: 'Connected User', // We could get this from ENS or user input later
-        recipientAddress,
-        recipientName,
-      }, fileData, userPublicKey, recipientPublicKey);
-
-      setRetrievalId(document.retrievalId);
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      alert('Error uploading document. Please try again.');
-    } finally {
+  // Update UI based on upload phase
+  useEffect(() => {
+    if (phase === 'complete' && result) {
       setIsUploading(false);
+      setRetrievalId(result.retrievalId);
+    } else if (phase === 'error' && uploadError) {
+      setIsUploading(false);
+      setErrorMessage(uploadError);
+    } else if (phase !== 'idle') {
+      setIsUploading(true);
     }
-  };
-
-  const copyToClipboard = () => {
-    if (retrievalId) {
-      navigator.clipboard.writeText(retrievalId);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
+  }, [phase, result, uploadError]);
 
   // Show wallet connection if not connected
   if (!isConnected || !address) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card/80 backdrop-blur-sm border-border">
           <div className="container mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center space-x-4">
               <Button variant="ghost" onClick={() => router.push('/')}>
@@ -115,15 +73,16 @@ export default function SendDocument() {
               </Button>
               <div className="flex items-center space-x-2">
                 <Shield className="h-8 w-8 text-primary" />
-                <h1 className="text-2xl font-bold">FiloSign</h1>
+                <h1 className="text-2xl font-bold text-foreground">FiloSign</h1>
               </div>
             </div>
+            <ThemeToggle />
           </div>
         </header>
 
         <main className="container mx-auto px-4 py-12 max-w-2xl">
           <div className="text-center space-y-6">
-            <h2 className="text-3xl font-bold">Connect Your Wallet</h2>
+            <h2 className="text-3xl font-bold text-foreground">Connect Your Wallet</h2>
             <p className="text-muted-foreground">
               Please connect your wallet to send documents securely
             </p>
@@ -137,10 +96,113 @@ export default function SendDocument() {
     );
   }
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+      setErrorMessage(null);
+    } else {
+      setErrorMessage('Please select a PDF file');
+    }
+  };
+
+  const handleRecipientSelect = (user: MockUser) => {
+    setRecipientAddress(user.address);
+    setRecipientName(user.name);
+    setErrorMessage(null);
+  };
+
+  const handleSignAndSecure = async () => {
+    if (!selectedFile || !recipientAddress || !recipientName || !currentUser) {
+      setErrorMessage('Please fill in all fields');
+      return;
+    }
+
+    setErrorMessage(null);
+    setIsUploading(true);
+
+    try {
+      // Use local storage for MVP
+      if (!isWalletConnected) {
+        throw new Error('Wallet connection required. Please connect your wallet first.');
+      }
+
+      // Start local storage upload workflow
+      await startUpload(selectedFile, {
+        recipientAddress,
+        metadata: {
+          filename: selectedFile.name,
+          description: `Document for ${recipientName}`
+        },
+        onProgress: (progress) => {
+          console.log(`Upload progress: ${progress}%`);
+        },
+        onPhaseChange: (phase) => {
+          console.log(`Upload phase: ${phase}`);
+        }
+      });
+
+      // The result handling is done in the useEffect above
+
+      // Legacy mock storage (keeping for fallback)
+      if (false) {
+        // Use mock storage (existing functionality)
+        // Convert file to base64
+        const fileData = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(selectedFile);
+        });
+
+        // Save document with mock encryption
+        const document = mockStorage.saveDocument({
+          title: selectedFile.name,
+          fileName: selectedFile.name,
+          fileData: mockStorage.encryptDocument(fileData, recipientAddress),
+          senderAddress: currentUser.address,
+          senderName: currentUser.name,
+          recipientAddress,
+          recipientName,
+        });
+
+        setRetrievalId(document.retrievalId);
+        setIsUploading(false);
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Error uploading document. Please try again.');
+      setIsUploading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    if (retrievalId) {
+      navigator.clipboard.writeText(retrievalId);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  // Helper function removed - using direct error messages from local storage
+
+  // Get upload status text based on phase
+  const getUploadStatusText = (): string => {
+    switch (phase) {
+      case 'connecting':
+        return 'Connecting to wallet...';
+      case 'encrypting':
+        return `Encrypting file... ${progress}%`;
+      case 'storing':
+        return `Storing securely... ${progress}%`;
+      default:
+        return 'Processing...';
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+      <header className="border-b bg-card/80 backdrop-blur-sm border-border">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-4">
             <Button variant="ghost" onClick={() => router.push('/')}>
@@ -149,20 +211,41 @@ export default function SendDocument() {
             </Button>
             <div className="flex items-center space-x-2">
               <Shield className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold">FiloSign</h1>
+              <h1 className="text-2xl font-bold text-foreground">FiloSign</h1>
             </div>
           </div>
 
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <div className="text-sm">
-              <div className="font-medium">Connected User</div>
+              <div className="font-medium text-foreground">Connected Wallet</div>
               <div className="text-muted-foreground">
-                {address.substring(0, 6)}...{address.substring(38)}
+                {address?.substring(0, 6)}...{address?.substring(38)}
               </div>
             </div>
-            <Button variant="outline" size="sm" onClick={handleLogout}>
-              Logout
-            </Button>
+
+            <div className={`px-3 py-1 rounded-full text-xs ${isWalletConnected ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
+              {isWalletConnected ? (
+                <div className="flex items-center">
+                  <Check className="h-3 w-3 mr-1" />
+                  <span>Wallet Connected</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <Wallet className="h-3 w-3 mr-1" />
+                  <span>Wallet Required</span>
+                </div>
+              )}
+            </div>
+
+            {userPublicKey && (
+              <div className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                <div className="flex items-center">
+                  <Shield className="h-3 w-3 mr-1" />
+                  <span>Encryption Ready</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -171,26 +254,41 @@ export default function SendDocument() {
         {!retrievalId ? (
           <div className="space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold mb-2">Send Document</h2>
-              <p className="text-muted-foreground form-description">
+              <h2 className="text-3xl font-bold mb-2 text-foreground">Send Document</h2>
+              <p className="text-muted-foreground">
                 Upload a document and specify a recipient to generate a secure retrieval ID
               </p>
+              <div className="mt-2 text-sm font-medium text-primary">
+                Using Local Storage (MVP)
+              </div>
             </div>
 
+            {errorMessage && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start space-x-2">
+                  <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                  <div>
+                    <p className="font-medium text-red-900">Error</p>
+                    <p className="text-red-700">{errorMessage}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Upload Document */}
-            <Card>
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-card-foreground">
                   <Upload className="h-5 w-5" />
                   <span>Upload Document</span>
                 </CardTitle>
-                <CardDescription className="form-description">
+                <CardDescription className="text-muted-foreground">
                   Select a PDF document to upload and share securely
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center transition-all duration-200 hover:border-primary hover:bg-primary/5 hover:shadow-md cursor-pointer group">
+                  <div className="upload-area border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary transition-colors bg-muted/50">
                     <input
                       type="file"
                       accept=".pdf"
@@ -198,10 +296,10 @@ export default function SendDocument() {
                       className="hidden"
                       id="file-upload"
                     />
-                    <label htmlFor="file-upload" className="cursor-pointer block">
-                      <FileText className="h-12 w-12 text-gray-300 dark:text-gray-200 mx-auto mb-4 group-hover:text-primary group-hover:scale-110 transition-all duration-200" />
-                      <p className="text-lg font-medium upload-text group-hover:text-primary transition-colors duration-200">Click to upload PDF</p>
-                      <p className="text-sm upload-text-secondary group-hover:text-primary/70 transition-colors duration-200">or drag and drop</p>
+                    <label htmlFor="file-upload" className="cursor-pointer">
+                      <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <p className="text-lg font-medium text-foreground">Click to upload PDF</p>
+                      <p className="text-sm text-muted-foreground">or drag and drop</p>
                     </label>
                   </div>
                   
@@ -221,38 +319,40 @@ export default function SendDocument() {
             </Card>
 
             {/* Document Recipient */}
-            <Card>
+            <Card className="bg-card border-border">
               <CardHeader>
-                <CardTitle>Document Recipient</CardTitle>
-                <CardDescription className="form-description">
+                <CardTitle className="text-card-foreground">Document Recipient</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Specify who should receive and sign this document
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="recipient-address" className="form-label">Recipient Ethereum Address</Label>
+                    <Label htmlFor="recipient-address" className="text-foreground">Recipient Ethereum Address</Label>
                     <Input
                       id="recipient-address"
                       value={recipientAddress}
                       onChange={(e) => setRecipientAddress(e.target.value)}
                       placeholder="0x..."
+                      className="bg-input border-border text-foreground"
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="recipient-name" className="form-label">Recipient Full Name</Label>
+                    <Label htmlFor="recipient-name" className="text-foreground">Recipient Full Name</Label>
                     <Input
                       id="recipient-name"
                       value={recipientName}
                       onChange={(e) => setRecipientName(e.target.value)}
                       placeholder="Enter recipient's full legal name"
+                      className="bg-input border-border text-foreground"
                     />
                   </div>
 
                   {/* Quick Select Recipients */}
                   <div className="space-y-2">
-                    <Label className="form-label">Quick Select (Demo Users)</Label>
+                    <Label className="text-foreground">Quick Select (Demo Users)</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {MOCK_USERS.filter(user => user.address !== address).map((user) => (
                         <Button
@@ -260,11 +360,11 @@ export default function SendDocument() {
                           variant="outline"
                           size="sm"
                           onClick={() => handleRecipientSelect(user)}
-                          className="justify-start hover:border-primary hover:bg-primary/5 group"
+                          className="justify-start bg-secondary border-border text-secondary-foreground hover:bg-secondary/80"
                         >
                           <div className="text-left">
-                            <div className="font-medium group-hover:text-primary transition-colors duration-200">{user.name}</div>
-                            <div className="text-xs text-muted-foreground group-hover:text-primary/70 transition-colors duration-200">
+                            <div className="font-medium">{user.name}</div>
+                            <div className="text-xs text-muted-foreground">
                               {user.address.substring(0, 6)}...{user.address.substring(38)}
                             </div>
                           </div>
@@ -279,16 +379,28 @@ export default function SendDocument() {
             {/* Sign and Secure */}
             <Card>
               <CardContent className="pt-6">
+                {!isWalletConnected && (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Wallet className="h-5 w-5 text-yellow-600" />
+                      <p className="text-sm text-yellow-800">
+                        Please connect your wallet to continue
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleSignAndSecure}
-                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading}
+                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !isWalletConnected}
                   className="w-full"
+                  variant="success"
                   size="lg"
                 >
                   {isUploading ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
+                      {getUploadStatusText()}
                     </>
                   ) : (
                     <>
@@ -297,6 +409,20 @@ export default function SendDocument() {
                     </>
                   )}
                 </Button>
+
+                {phase !== 'idle' && phase !== 'error' && phase !== 'complete' && (
+                  <div className="mt-4">
+                    <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                      <div
+                        className="bg-primary h-2.5 rounded-full"
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-center mt-1 text-muted-foreground">
+                      {progress}% - {phase}
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -307,11 +433,26 @@ export default function SendDocument() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                 <Check className="h-8 w-8 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold">Document Secured!</h2>
+              <h2 className="text-3xl font-bold text-foreground">Document Secured!</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Your document has been encrypted and secured. Share the retrieval ID below with {recipientName} 
+                Your document has been encrypted and stored securely.
+                Share the retrieval ID below with {recipientName}
                 so they can access and sign the document.
               </p>
+
+              {result && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">Document ID:</span> {result.retrievalId}
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">Storage:</span> Local (MVP)
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    <span className="font-medium">Encryption:</span> Hybrid (AES + RSA)
+                  </p>
+                </div>
+              )}
             </div>
 
             <Card className="max-w-md mx-auto">

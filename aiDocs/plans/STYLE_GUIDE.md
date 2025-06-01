@@ -1,31 +1,40 @@
 # FiloSign Style Guide & Color Contrast Analysis
 
-## Current Color Contrast Issues
-
-### 🚨 **Problem Identified**
-When hover states change background colors to lighter shades, text colors don't automatically adjust, causing poor contrast and unreadable text.
+## ✅ **Recent Updates**
+- **Theme Toggle Added**: Users can now switch between light and dark modes
+- **Text Contrast Fixed**: File upload success area now uses high-contrast colors
+- **Human-Readable Colors**: Updated color documentation with semantic names
 
 ## Color Palette
 
-### Light Mode Colors
-| Variable | Color Name | HSL Value | Hex Equivalent | Usage |
-|----------|------------|-----------|----------------|-------|
-| `--background` | Pure White | `0 0% 100%` | `#FFFFFF` | Page background |
-| `--foreground` | Near Black | `0 0% 5%` | `#0D0D0D` | Primary text |
-| `--primary` | Dark Gray | `0 0% 10%` | `#1A1A1A` | Primary buttons |
-| `--primary-foreground` | Off White | `0 0% 98%` | `#FAFAFA` | Text on primary |
-| `--muted-foreground` | Medium Gray | `0 0% 40%` | `#666666` | Secondary text |
-| `--accent` | Light Gray | `0 0% 96%` | `#F5F5F5` | Hover backgrounds |
+### Light Mode Colors (Human-Readable Names)
+| Variable | Color Name | HSL Value | Hex Equivalent | Semantic Name | Usage |
+|----------|------------|-----------|----------------|---------------|-------|
+| `--background` | Pure White | `0 0% 100%` | `#FFFFFF` | **Snow White** | Page background |
+| `--foreground` | Near Black | `0 0% 5%` | `#0D0D0D` | **Charcoal Black** | Primary text |
+| `--primary` | Dark Gray | `0 0% 10%` | `#1A1A1A` | **Graphite Gray** | Primary buttons |
+| `--primary-foreground` | Off White | `0 0% 98%` | `#FAFAFA` | **Pearl White** | Text on primary |
+| `--muted-foreground` | Medium Gray | `0 0% 40%` | `#666666` | **Slate Gray** | Secondary text |
+| `--accent` | Light Gray | `0 0% 96%` | `#F5F5F5` | **Whisper Gray** | Hover backgrounds |
 
-### Dark Mode Colors
-| Variable | Color Name | HSL Value | Hex Equivalent | Usage |
-|----------|------------|-----------|----------------|-------|
-| `--background` | Dark Blue-Gray | `220 15% 12%` | `#1A1D23` | Page background |
-| `--foreground` | Pure White | `0 0% 100%` | `#FFFFFF` | Primary text |
-| `--primary` | Pure White | `0 0% 100%` | `#FFFFFF` | Primary buttons |
-| `--primary-foreground` | Dark Blue-Gray | `220 15% 12%` | `#1A1D23` | Text on primary |
-| `--muted-foreground` | Light Gray | `0 0% 90%` | `#E6E6E6` | Secondary text |
-| `--accent` | Medium Blue-Gray | `220 15% 20%` | `#2A2F36` | Hover backgrounds |
+### Dark Mode Colors (Human-Readable Names)
+| Variable | Color Name | HSL Value | Hex Equivalent | Semantic Name | Usage |
+|----------|------------|-----------|----------------|---------------|-------|
+| `--background` | Dark Blue-Gray | `220 15% 12%` | `#1A1D23` | **Midnight Blue** | Page background |
+| `--foreground` | Pure White | `0 0% 100%` | `#FFFFFF` | **Snow White** | Primary text |
+| `--primary` | Pure White | `0 0% 100%` | `#FFFFFF` | **Snow White** | Primary buttons |
+| `--primary-foreground` | Dark Blue-Gray | `220 15% 12%` | `#1A1D23` | **Midnight Blue** | Text on primary |
+| `--muted-foreground` | Light Gray | `0 0% 90%` | `#E6E6E6` | **Silver Gray** | Secondary text |
+| `--accent` | Medium Blue-Gray | `220 15% 20%` | `#2A2F36` | **Storm Gray** | Hover backgrounds |
+
+### Success Colors (File Upload States)
+| Context | Light Mode | Dark Mode | Semantic Name | Usage |
+|---------|------------|-----------|---------------|-------|
+| **Background** | `bg-green-50` (`#F0FDF4`) | `bg-green-900/20` (`#14532D33`) | **Mint Whisper / Forest Shadow** | Success area background |
+| **Border** | `border-green-200` (`#BBF7D0`) | `border-green-700` (`#15803D`) | **Sage Green / Forest Green** | Success area border |
+| **Icon** | `text-green-600` (`#16A34A`) | `text-green-400` (`#4ADE80`) | **Emerald / Bright Mint** | Success icons |
+| **Primary Text** | `text-green-900` (`#14532D`) | `text-green-100` (`#DCFCE7`) | **Forest Dark / Mint Light** | Filename text |
+| **Secondary Text** | `text-green-700` (`#15803D`) | `text-green-200` (`#BBF7D0`) | **Forest Green / Sage Light** | File size text |
 
 ## Element-Specific Style Guide
 

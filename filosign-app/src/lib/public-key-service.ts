@@ -17,32 +17,44 @@ export class PublicKeyService {
    */
   async discoverPublicKey(walletAddress: string, signMessageAsync: (args: { message: string }) => Promise<string>): Promise<string> {
     try {
+      console.log('🔍 Starting public key discovery for:', walletAddress);
+
       // Check if we already have a valid cached key
       const cachedKey = await this.getPublicKey(walletAddress);
       if (cachedKey) {
+        console.log('✅ Found cached public key for:', walletAddress);
         return cachedKey;
       }
 
+      console.log('📝 Generating signature message...');
       // Generate standard message for key discovery
       const message = this.generateStandardMessage(walletAddress);
+      console.log('📄 Message to sign:', message);
 
+      console.log('✍️ Requesting wallet signature...');
       // Request wallet signature using Wagmi
       const signature = await signMessageAsync({ message });
+      console.log('📝 Received signature:', signature.substring(0, 20) + '...');
 
+      console.log('🔑 Extracting public key from signature...');
       // Extract public key from signature
       const publicKey = await this.extractPublicKeyFromSignature(message, signature);
+      console.log('🔑 Extracted public key:', publicKey.substring(0, 20) + '...');
 
+      console.log('✅ Validating signature...');
       // Validate that the signature matches the wallet address
       if (!await this.validateSignature(walletAddress, message, signature)) {
         throw new Error('Signature validation failed - recovered address does not match wallet address');
       }
 
+      console.log('💾 Caching public key...');
       // Cache the validated public key
       await this.cachePublicKey(walletAddress, publicKey);
 
+      console.log('🎉 Public key discovery complete for:', walletAddress);
       return publicKey;
     } catch (error) {
-      console.error('Failed to discover public key:', error);
+      console.error('❌ Failed to discover public key:', error);
       throw new Error(`Public key discovery failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
