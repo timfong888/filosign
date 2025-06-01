@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,7 +18,7 @@ import { WalletConnection } from '@/components/wallet-connection';
 export default function SendDocument() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  // const { disconnect } = useDisconnect();
+  const { disconnect } = useDisconnect();
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -45,6 +45,12 @@ export default function SendDocument() {
 
   const handleWalletDisconnected = () => {
     setUserPublicKey(null);
+  };
+
+  const handleLogout = () => {
+    disconnect();
+    setUserPublicKey(null);
+    router.push('/');
   };
 
   // Update UI based on upload phase
@@ -246,6 +252,10 @@ export default function SendDocument() {
                 </div>
               </div>
             )}
+
+            <Button variant="outline" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
           </div>
         </div>
       </header>

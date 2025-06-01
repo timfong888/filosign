@@ -167,54 +167,43 @@ export function WalletConnection({ onWalletConnected, onWalletDisconnected }: Wa
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {connectors.map((connector) => {
-            const getConnectorName = (connector: Connector) => {
-              if (connector.name.includes('MetaMask')) return 'Connect MetaMask'
-              if (connector.name === 'Injected Wallet' || connector.name === 'Injected') return 'Connect Wallet'
-              return `Connect ${connector.name}`
-            }
-
-            return (
-              <Button
-                key={connector.uid}
-                onClick={() => handleConnect(connector)}
-                disabled={isPending}
-                className="w-full"
-                variant={connector.name.includes('MetaMask') ? 'default' : 'outline'}
-              >
-                {isPending ? 'Connecting...' : getConnectorName(connector)}
-              </Button>
-            )
-          })}
-
-          {connectors.length === 0 && (
+          {connectors.length > 0 ? (
+            <Button
+              onClick={() => handleConnect(connectors[0])}
+              disabled={isPending}
+              className="w-full"
+              size="lg"
+            >
+              {isPending ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  Connecting...
+                </>
+              ) : (
+                'Connect Wallet'
+              )}
+            </Button>
+          ) : (
             <div className="text-center space-y-4">
               <p className="text-sm text-muted-foreground">
-                No wallet detected. Please install a compatible wallet to continue.
+                No wallet detected. Please install MetaMask or another compatible wallet to continue.
               </p>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  onClick={() => window.open('https://metamask.io/download/', '_blank')}
-                  className="w-full"
-                >
-                  Install MetaMask
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => window.open('https://zerion.io/', '_blank')}
-                  className="w-full"
-                >
-                  Install Zerion
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                onClick={() => window.open('https://metamask.io/download/', '_blank')}
+                className="w-full"
+              >
+                Install MetaMask
+              </Button>
             </div>
           )}
 
           {error && (
-            <p className="text-sm text-red-600 mt-2">
-              {error}
-            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+              <p className="text-sm text-red-600">
+                {error}
+              </p>
+            </div>
           )}
         </div>
       </CardContent>

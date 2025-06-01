@@ -12,17 +12,9 @@ export const wagmiConfig = createConfig({
     injected({
       target: () => ({
         id: 'injected',
-        name: 'Injected Wallet',
+        name: 'Connect Wallet',
         provider: typeof window !== 'undefined' ? window.ethereum : undefined,
       }),
-    }),
-    metaMask({
-      dappMetadata: {
-        name: 'FiloSign',
-        description: 'Secure document signing powered by Filecoin',
-        url: 'https://filosign.vercel.app',
-        icons: ['https://filosign.vercel.app/favicon.ico'],
-      },
     }),
   ],
   transports: {
