@@ -1,7 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": ".next",
+  "buildCommand": "cd filosign-app && npm run build",
+  "outputDirectory": "filosign-app/.next",
+  "installCommand": "cd filosign-app && npm install",
   "framework": "nextjs",
   "github": {
     "silent": true,
