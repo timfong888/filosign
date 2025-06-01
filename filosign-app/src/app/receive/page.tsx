@@ -95,25 +95,9 @@ export default function ReceiveDocument() {
         return;
       }
 
-      // Get user's public key for decryption
-      if (!userPublicKey) {
-        setError('Public key not available. Please ensure your wallet encryption is set up.');
-        return;
-      }
-
-      // Try to decrypt document
-      console.log(`Attempting to decrypt document for ${accessCheck.role}:`, address);
-      const decryptedData = await mockStorage.decryptDocumentForUser(doc, address, userPublicKey);
-      if (!decryptedData) {
-        setError('Document decryption failed. Please check the browser console for details.');
-        return;
-      }
-
-      // Update document with decrypted data for preview
-      setDocument({
-        ...doc,
-        decryptedFileData: decryptedData // Store decrypted data separately
-      });
+      // For MVP, documents are stored without encryption
+      // Just set the document directly
+      setDocument(doc);
 
     } catch (error) {
       console.error('Error retrieving document:', error);

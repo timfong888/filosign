@@ -135,61 +135,31 @@ export default function SendDocument() {
       return;
     }
 
-    if (!userPublicKey) {
-      setErrorMessage('Public key not discovered. Please ensure your wallet encryption is set up.');
-      return;
-    }
-
     setErrorMessage(null);
     setIsUploading(true);
 
     try {
-      // Use local storage for MVP
-      if (!isWalletConnected) {
-        throw new Error('Wallet connection required. Please connect your wallet first.');
-      }
-
-      // Start local storage upload workflow
-      await startUpload(selectedFile, {
-        recipientAddress,
-        metadata: {
-          filename: selectedFile.name,
-          description: `Document for ${recipientName}`
-        },
-        onProgress: (progress) => {
-          console.log(`Upload progress: ${progress}%`);
-        },
-        onPhaseChange: (phase) => {
-          console.log(`Upload phase: ${phase}`);
-        }
+      // Simple mock storage without encryption for MVP
+      // Convert file to base64
+      const fileData = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(selectedFile);
       });
 
-      // The result handling is done in the useEffect above
+      // Save document with simple storage (no encryption for now)
+      const document = mockStorage.saveDocument({
+        title: selectedFile.name,
+        fileName: selectedFile.name,
+        fileData: fileData, // Store directly without encryption
+        senderAddress: address,
+        senderName: 'Current User',
+        recipientAddress,
+        recipientName,
+      });
 
-      // Legacy mock storage (keeping for fallback)
-      if (false) {
-        // Use mock storage (existing functionality)
-        // Convert file to base64
-        const fileData = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(selectedFile);
-        });
-
-        // Save document with mock encryption
-        const document = mockStorage.saveDocument({
-          title: selectedFile.name,
-          fileName: selectedFile.name,
-          fileData: mockStorage.encryptDocument(fileData, recipientAddress),
-          senderAddress: address,
-          senderName: 'Current User', // Using placeholder since we don't have user name
-          recipientAddress,
-          recipientName,
-        });
-
-        setRetrievalId(document.retrievalId);
-        setIsUploading(false);
-      }
+      setRetrievalId(document.retrievalId);
+      setIsUploading(false);
     } catch (error) {
       console.error('Error uploading document:', error);
       setErrorMessage(error instanceof Error ? error.message : 'Error uploading document. Please try again.');
@@ -245,29 +215,6 @@ export default function SendDocument() {
                 {address?.substring(0, 6)}...{address?.substring(38)}
               </div>
             </div>
-
-            <div className={`px-3 py-1 rounded-full text-xs ${isWalletConnected ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'}`}>
-              {isWalletConnected ? (
-                <div className="flex items-center">
-                  <Check className="h-3 w-3 mr-1" />
-                  <span>Wallet Connected</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <Wallet className="h-3 w-3 mr-1" />
-                  <span>Wallet Required</span>
-                </div>
-              )}
-            </div>
-
-            {userPublicKey && (
-              <div className="px-3 py-1 rounded-full text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                <div className="flex items-center">
-                  <Shield className="h-3 w-3 mr-1" />
-                  <span>Encryption Ready</span>
-                </div>
-              </div>
-            )}
 
             <Button variant="outline" size="sm" onClick={handleLogout}>
               Logout
@@ -405,31 +352,9 @@ export default function SendDocument() {
             {/* Sign and Secure */}
             <Card>
               <CardContent className="pt-6">
-                {!isWalletConnected && (
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Wallet className="h-5 w-5 text-yellow-600" />
-                      <p className="text-sm text-yellow-800">
-                        Please connect your wallet to continue
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {isWalletConnected && !userPublicKey && (
-                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center space-x-2">
-                      <Shield className="h-5 w-5 text-orange-600" />
-                      <p className="text-sm text-orange-800">
-                        Please setup your encryption key to continue. Click "Setup Encryption Key" in the wallet connection.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
                 <Button
                   onClick={handleSignAndSecure}
-                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !isWalletConnected || !userPublicKey}
+                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !isConnected}
                   className="w-full"
                   variant="success"
                   size="lg"
@@ -470,26 +395,24 @@ export default function SendDocument() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
                 <Check className="h-8 w-8 text-green-600" />
               </div>
-              <h2 className="text-3xl font-bold text-foreground">Document Secured!</h2>
+              <h2 className="text-3xl font-bold text-foreground">Document Uploaded!</h2>
               <p className="text-muted-foreground max-w-2xl mx-auto">
-                Your document has been encrypted and stored securely.
+                Your document has been stored successfully.
                 Share the retrieval ID below with {recipientName}
                 so they can access and sign the document.
               </p>
 
-              {result && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-                  <p className="text-sm text-blue-800">
-                    <span className="font-medium">Document ID:</span> {result.retrievalId}
-                  </p>
-                  <p className="text-sm text-blue-800">
-                    <span className="font-medium">Storage:</span> Local (MVP)
-                  </p>
-                  <p className="text-sm text-blue-800">
-                    <span className="font-medium">Encryption:</span> Hybrid (AES + RSA)
-                  </p>
-                </div>
-              )}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Document ID:</span> {retrievalId}
+                </p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Storage:</span> Local Storage (MVP)
+                </p>
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Status:</span> Ready for Signing
+                </p>
+              </div>
             </div>
 
             <Card className="max-w-md mx-auto">

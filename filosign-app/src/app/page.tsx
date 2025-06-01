@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { FileText, Shield, Users, Wallet, Key } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -84,6 +84,12 @@ export default function Home() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Connect Your Wallet</DialogTitle>
+                    <DialogDescription>
+                      Choose a wallet to connect to FiloSign
+                    </DialogDescription>
+                  </DialogHeader>
                   <WalletConnection
                     onWalletConnected={handleWalletConnected}
                     onWalletDisconnected={handleWalletDisconnected}
