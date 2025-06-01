@@ -279,9 +279,20 @@ export default function SendDocument() {
             {/* Sign and Secure */}
             <Card>
               <CardContent className="pt-6">
+                {!userPublicKey && (
+                  <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center space-x-2">
+                      <Shield className="h-5 w-5 text-orange-600" />
+                      <p className="text-sm text-orange-800">
+                        Please setup your encryption key to continue. Click "Setup Encryption Key" in the wallet connection.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <Button
                   onClick={handleSignAndSecure}
-                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading}
+                  disabled={!selectedFile || !recipientAddress || !recipientName || isUploading || !userPublicKey}
                   className="w-full"
                   size="lg"
                 >
