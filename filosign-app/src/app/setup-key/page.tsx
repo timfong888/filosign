@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAccount, useSignMessage } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+// import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Shield, Check, AlertCircle, Key } from 'lucide-react';
 import { WalletConnection } from '@/components/wallet-connection';
 import { publicKeyService } from '@/lib/public-key-service';
@@ -110,10 +110,15 @@ export default function SetupKeyPage() {
           </div>
 
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <div>
+                  <p className="font-medium text-red-900">Error</p>
+                  <p className="text-red-700">{error}</p>
+                </div>
+              </div>
+            </div>
           )}
 
           {!setupComplete ? (
@@ -132,7 +137,7 @@ export default function SetupKeyPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-medium text-blue-900 mb-2">What happens during setup:</h4>
                   <ul className="text-sm text-blue-700 space-y-1">
-                    <li>• You'll sign a message with MetaMask</li>
+                    <li>• You&apos;ll sign a message with MetaMask</li>
                     <li>• Your public key will be extracted from the signature</li>
                     <li>• The public key will be cached locally for future use</li>
                     <li>• Your private key remains secure in MetaMask</li>

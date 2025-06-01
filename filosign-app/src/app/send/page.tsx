@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAccount, useDisconnect } from 'wagmi';
+import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Upload, FileText, Shield, Copy, Check, AlertCircle, Wallet } from 'lucide-react';
 import { MOCK_USERS } from '@/lib/mock-storage';
-import { useUploadLocal, UploadPhase } from '@/lib/hooks/use-upload-local';
+import { useUploadLocal } from '@/lib/hooks/use-upload-local';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { WalletConnection } from '@/components/wallet-connection';
 
@@ -18,7 +18,7 @@ import { WalletConnection } from '@/components/wallet-connection';
 export default function SendDocument() {
   const router = useRouter();
   const { address, isConnected } = useAccount();
-  const { disconnect } = useDisconnect();
+  // const { disconnect } = useDisconnect();
   const [userPublicKey, setUserPublicKey] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recipientAddress, setRecipientAddress] = useState('');
@@ -35,7 +35,7 @@ export default function SendDocument() {
     result,
     error: uploadError,
     isWalletConnected,
-    walletAddress,
+    // walletAddress,
     startUpload
   } = useUploadLocal();
 
