@@ -1,14 +1,17 @@
 import { v4 as uuidv4 } from 'uuid';
-import { encryptionService, EncryptedDocument } from './encryption-service';
 
 export interface Document {
   id: string;
   retrievalId: string;
-  encryptedDocument: EncryptedDocument; // Privacy-preserving encrypted document
-  createdAt: string;
+  title: string;
+  fileName: string;
+  fileData: string; // Base64 encoded file data
+  senderAddress: string;
+  senderName: string;
+  recipientAddress: string;
+  recipientName: string;
   status: 'pending' | 'signed';
-  // NOTE: No sender/recipient addresses, names, titles, or filenames stored
-  // This prevents metadata leakage and relationship analysis
+  createdAt: string;
 }
 
 export interface MockUser {
@@ -28,24 +31,28 @@ class MockStorage {
   private userKey = 'filosign-current-user';
 
   // Document operations
-  async saveDocument(
-    fileData: string,
-    alicePublicKey: string,
-    bobPublicKey: string
-  ): Promise<Document> {
+  saveDocument(params: {
+    title: string;
+    fileName: string;
+    fileData: string;
+    senderAddress: string;
+    senderName: string;
+    recipientAddress: string;
+    recipientName: string;
+  }): Document {
     try {
-      // Encrypt document with privacy-preserving dual access
-      const encryptedDocument = await encryptionService.encryptDocument(
-        fileData,
-        alicePublicKey,
-        bobPublicKey
-      );
-
       const documents = this.getDocuments();
+
       const newDoc: Document = {
-        encryptedDocument,
         id: uuidv4(),
         retrievalId: this.generateRetrievalId(),
+        title: params.title,
+        fileName: params.fileName,
+        fileData: params.fileData,
+        senderAddress: params.senderAddress,
+        senderName: params.senderName,
+        recipientAddress: params.recipientAddress,
+        recipientName: params.recipientName,
         createdAt: new Date().toISOString(),
         status: 'pending'
       };
@@ -64,15 +71,7 @@ class MockStorage {
     if (!stored) return [];
 
     try {
-      const documents = JSON.parse(stored);
-      // Filter out documents with old format (missing encryptedDocument)
-      return documents.filter((doc: any) => {
-        if (!doc.encryptedDocument) {
-          console.warn('Skipping document with old format:', doc.retrievalId);
-          return false;
-        }
-        return true;
-      });
+      return JSON.parse(stored);
     } catch (error) {
       console.error('Failed to parse stored documents:', error);
       return [];
@@ -87,7 +86,7 @@ class MockStorage {
   // Note: getDocumentsByUser removed - no longer possible without storing addresses
   // This is intentional for privacy preservation
 
-  async signDocument(retrievalId: string, userPublicKey: string): Promise<boolean> {
+  signDocument(retrievalId: string, userAddress: string): boolean {
     const documents = this.getDocuments();
     const docIndex = documents.findIndex(doc => doc.retrievalId === retrievalId);
 
@@ -95,9 +94,10 @@ class MockStorage {
 
     const doc = documents[docIndex];
 
-    // Use cryptographic verification instead of address checking
-    const accessCheck = await this.canUserAccessDocument(doc, userPublicKey);
-    if (!accessCheck.canAccess) return false;
+    // Simple address check for MVP
+    if (doc.recipientAddress.toLowerCase() !== userAddress.toLowerCase()) {
+      return false;
+    }
 
     documents[docIndex] = {
       ...doc,
@@ -127,34 +127,23 @@ class MockStorage {
     return `FS-${uuidv4().substring(0, 8).toUpperCase()}`;
   }
 
-  // Decrypt document for user (privacy-preserving)
-  async decryptDocumentForUser(document: Document, userPublicKey: string): Promise<string | null> {
-    try {
-      return await encryptionService.decryptDocument(
-        document.encryptedDocument,
-        userPublicKey
-      );
-    } catch (error) {
-      console.error('Failed to decrypt document:', error);
-      return null;
-    }
-  }
+  // Check if user can access document (simple address check for MVP)
+  canUserAccessDocument(document: Document, userAddress: string): { canAccess: boolean; role: 'sender' | 'recipient' | 'none'; reason?: string } {
+    const userAddressLower = userAddress.toLowerCase();
 
-  // Check if user can access document (privacy-preserving)
-  async canUserAccessDocument(document: Document, userPublicKey: string): Promise<{ canAccess: boolean; role: 'alice' | 'bob' | 'none'; reason?: string }> {
-    try {
-      return await encryptionService.canUserAccessDocument(
-        document.encryptedDocument,
-        userPublicKey
-      );
-    } catch (error) {
-      console.error('Failed to check document access:', error);
-      return {
-        canAccess: false,
-        role: 'none',
-        reason: 'Access check failed'
-      };
+    if (document.senderAddress.toLowerCase() === userAddressLower) {
+      return { canAccess: true, role: 'sender' };
     }
+
+    if (document.recipientAddress.toLowerCase() === userAddressLower) {
+      return { canAccess: true, role: 'recipient' };
+    }
+
+    return {
+      canAccess: false,
+      role: 'none',
+      reason: 'User is not sender or recipient'
+    };
   }
 
 
@@ -166,17 +155,19 @@ class MockStorage {
     console.log('All FiloSign data cleared');
   }
 
-  // Debug function to list all documents (privacy-preserving)
+  // Debug function to list all documents
   debugListDocuments(): void {
     const documents = this.getDocuments();
-    console.log('All stored documents (privacy-preserving):', documents);
+    console.log('All stored documents:', documents);
     documents.forEach((doc, index) => {
       console.log(`Document ${index + 1}:`, {
         retrievalId: doc.retrievalId,
+        title: doc.title,
+        fileName: doc.fileName,
+        senderName: doc.senderName,
+        recipientName: doc.recipientName,
         status: doc.status,
-        createdAt: doc.createdAt,
-        encryptionMethod: doc.encryptedDocument.encryptionMethod
-        // NOTE: No addresses, names, or titles shown - privacy preserved
+        createdAt: doc.createdAt
       });
     });
   }

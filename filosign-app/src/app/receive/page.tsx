@@ -75,7 +75,7 @@ export default function ReceiveDocument() {
       }
 
       // Check if user can access this document (sender or recipient)
-      const accessCheck = await mockStorage.canUserAccessDocument(doc, address);
+      const accessCheck = mockStorage.canUserAccessDocument(doc, address);
 
       console.log('Access verification:', {
         userAddress: address,
